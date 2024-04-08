@@ -7,10 +7,7 @@
 
 #include "cie_const.cuh"
 #include "color_const.cuh"
-#include "srgb_to_spectrum.h"
-
-__constant__ inline int dev_sRGBToSpectrumTable_Res;
-__constant__ inline float dev_sRGBToSpectrumTable_Scale[64];
+#include "srgb_to_spectrum.cuh"
 
 __host__
 inline void init_device_symbols() {
