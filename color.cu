@@ -78,3 +78,12 @@ color dev_spectrum_to_XYZ(const float* spectrum, const float* power_distribution
 
     return color(x, y, z);
 }
+
+__host__
+void write_color(std::ostream &out, const color pixel_color) {
+    // Assumes RGB values are already in [0, 255] range
+
+    out << static_cast<int>(pixel_color.x()) << ' '
+        << static_cast<int>(pixel_color.y()) << ' '
+        << static_cast<int>(pixel_color.z()) << '\n';
+}

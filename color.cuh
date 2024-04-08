@@ -32,4 +32,7 @@ color spectrum_to_XYZ(const float* spectrum, float* power_distribution, int n_sa
 __device__
 color dev_spectrum_to_XYZ(float* spectrum, float* power_distribution, int n_samples);
 
+__host__
+void write_color(std::ostream &out, color pixel_color);
+
 #endif //COLOR_CONVERSION_COLOR_H
