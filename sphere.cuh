@@ -14,23 +14,23 @@ public:
     __host__ __device__
     sphere(point3 _center, float _radius, material* _material) : center(_center), radius(_radius), mat(_material) {
         //TODO: if adding motion blur revise this
-        // auto rvec = vec3(radius, radius, radius);
-        // bbox = aabb(center - rvec, center + rvec);
+        auto rvec = vec3(radius, radius, radius);
+        bbox = aabb(center - rvec, center + rvec);
     }
 
     __device__
     bool hit(const ray &r, float min, float max, hit_record &rec) const override;
 
-//    __host__ __device__
-//    aabb bounding_box() const override {
-//        return bbox;
-//    }
+    __host__ __device__
+    aabb bounding_box() const override {
+        return bbox;
+    }
 
 private:
     point3 center;
     float radius;
     material* mat;
-    // aabb bbox;
+    aabb bbox;
 };
 
 

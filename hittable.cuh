@@ -6,7 +6,7 @@
 #define SPECTRAL_RT_PROJECT_HITTABLE_CUH
 
 #include "ray.cuh"
-
+#include "aabb.cuh"
 
 struct material;
 
@@ -49,8 +49,8 @@ public:
     __device__
     virtual bool hit(const ray& r, float min, float max, hit_record& rec) const = 0;
 
-    // __host__ __device__
-    // virtual aabb bounding_box() const = 0;
+    __host__ __device__
+    virtual aabb bounding_box() const = 0;
 };
 
 /**
