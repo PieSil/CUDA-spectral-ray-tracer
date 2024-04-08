@@ -4,6 +4,7 @@
 #include "color_to_spectrum.cuh"
 #include "hittable.cuh"
 #include "materials/material.cuh"
+#include "bvh.cuh"
 
 int main() {
     std::cout << "Hello, World!" << std::endl;

@@ -20,7 +20,8 @@ add_executable(spectral-rt-project
         srgb_to_spectrum.cu
         sphere.cu
         materials/material.cu
-        aabb.cu)
+        aabb.cu
+        bvh.cu)
 
 set_target_properties(spectral-rt-project PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
