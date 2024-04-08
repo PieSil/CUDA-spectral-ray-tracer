@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.24)
 
 project(spectral-rt-project CXX CUDA)
 
-# set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(INCLUDE_DIRS "CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES")
 include_directories(INCLUDE_DIRS)
 
@@ -17,11 +17,12 @@ add_executable(spectral-rt-project
         color_const.cu
         cuda_utility.cu
         color.cu
-        srgb_to_spectrum.cpp
+        srgb_to_spectrum.cu
         sphere.cu
-        materials/material.cu)
+        materials/material.cu
+        aabb.cu)
 
 set_target_properties(spectral-rt-project PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
         CUDA_ARCHITECTURES "50;75;80"
-        CXX_PRECOMPILE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/srgb_to_spectrum.h)
+        CXX_PRECOMPILE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/srgb_to_spectrum.cuh)
