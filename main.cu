@@ -3,6 +3,7 @@
 #include "device_init.cuh"
 #include "color_to_spectrum.cuh"
 #include "hittable.cuh"
+#include "materials/material.cuh"
 
 int main() {
     std::cout << "Hello, World!" << std::endl;

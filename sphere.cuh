@@ -12,7 +12,7 @@
 class sphere : public hittable {
 public:
     __host__ __device__
-    sphere(point3 _center, float _radius/*, material* _material*/) : center(_center), radius(_radius)/*, mat(_material)*/ {
+    sphere(point3 _center, float _radius, material* _material) : center(_center), radius(_radius), mat(_material) {
         //TODO: if adding motion blur revise this
         // auto rvec = vec3(radius, radius, radius);
         // bbox = aabb(center - rvec, center + rvec);
@@ -29,7 +29,7 @@ public:
 private:
     point3 center;
     float radius;
-    // material* mat;
+    material* mat;
     // aabb bbox;
 };
 

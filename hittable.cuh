@@ -7,6 +7,9 @@
 
 #include "ray.cuh"
 
+
+struct material;
+
 class hit_record {
 public:
     point3 p;
@@ -14,7 +17,7 @@ public:
     float t;
     //float u, v; //surface coordinates of the ray-object hit point
     bool front_face;
-    // material* mat; //When a ray hits a surface the material pointer will be set to point
+    material* mat; //When a ray hits a surface the material pointer will be set to point
     // at the material the surface was given
 
 
