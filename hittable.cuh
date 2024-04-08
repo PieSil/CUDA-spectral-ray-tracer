@@ -16,7 +16,6 @@ public:
     bool front_face;
     // material* mat; //When a ray hits a surface the material pointer will be set to point
     // at the material the surface was given
-    //TODO: remove pointers if possible in order to avoid access to global memory (how: transform the classes into structs and create "standalone" functions)
 
 
     __device__
@@ -37,7 +36,17 @@ public:
 };
 
 class hittable {
+    /* A generic class for things that can be hit by a ray */
 
+    __host__ __device__
+    virtual ~hittable() {} // DO NOT USE = default, it breaks everything, I lack the knowledge and the will
+    // to understand why (since it should be the same thing), but it appears it isn't.
+
+    __device__
+    virtual bool hit(const ray& r, float min, float max, hit_record& rec) const = 0;
+
+    // __host__ __device__
+    // virtual aabb bounding_box() const = 0;
 };
 
 
