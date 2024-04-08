@@ -7,7 +7,7 @@
 
 #include "host_utility.cuh"
 #include "color.cuh"
-#include "srgb_to_spectrum.h"
+#include "srgb_to_spectrum.cuh"
 
 /*
  * This file defines a series of functions needed in order to convert a color expressed in the sRGB color space
