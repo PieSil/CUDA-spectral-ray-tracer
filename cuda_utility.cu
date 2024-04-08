@@ -42,6 +42,8 @@ int cuda_random_int(int min, int max, curandState* local_rand_state) {
 
 __device__
 float device_clamp(float value, float min, float max) {
+    //Do not return early, avoid divergence, maybe I'm paranoid
+
     const float t = value < min ? min : value;
     return t > max ? max : t;
 }
