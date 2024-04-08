@@ -36,6 +36,7 @@ public:
 };
 
 class hittable {
+public:
     /* A generic class for things that can be hit by a ray */
 
     __host__ __device__
@@ -48,6 +49,37 @@ class hittable {
     // __host__ __device__
     // virtual aabb bounding_box() const = 0;
 };
+
+/**
+ * @brief Determine intersection between a ray and a list of hittable objects.
+ *
+ * @param r In ray.
+ * @param objects Array of hittables that we want to check intersections for.
+ * @param n_obj Size of objects array.
+ * @param min Minimum distance from ray origin to consider the intersection as valid.
+ * @param max Maximum distance from ray origin to consider the intersection as valid.
+ * @param rec Hit record to store intersection's data.
+ *
+ * @return Boolean value that states whether the ray hit something or not.
+ */
+ __device__
+inline bool hit_objects(const ray& r, const hittable** objects, const uint n_obj, const float min, const float max,
+                        hit_record& rec) {
+    hit_record temp_rec;
+
+    bool hit_anything = false;
+    auto closest_so_far = max;
+
+    for (int i = 0; i < n_obj; i++) {
+        if (objects[i]->hit(r, min, closest_so_far, temp_rec)) {
+            hit_anything = true;
+            closest_so_far = temp_rec.t;
+            rec = temp_rec;
+        }
+    }
+
+    return hit_anything;
+}
 
 
 #endif //SPECTRAL_RT_PROJECT_HITTABLE_CUH
