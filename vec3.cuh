@@ -102,6 +102,8 @@ public:
     }
 };
 
+using point3 = vec3;
+
 __host__
 inline std::ostream& operator<<(std::ostream &out, const vec3 &v) {
     return out << v[0] << ' ' << v[1] << ' ' << v[2];
