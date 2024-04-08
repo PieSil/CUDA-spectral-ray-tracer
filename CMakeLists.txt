@@ -17,8 +17,7 @@ add_executable(spectral-rt-project
         color_const.cu
         cuda_utility.cu
         color.cu
-A        srgb_to_spectrum.cpp
-        ray.cu)
+        srgb_to_spectrum.cpp)
 
 set_target_properties(spectral-rt-project PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
