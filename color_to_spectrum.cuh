@@ -9,6 +9,31 @@
 #include "color.cuh"
 #include "srgb_to_spectrum.h"
 
+/*
+ * This file defines a series of functions needed in order to convert a color expressed in the sRGB color space
+ * to the corresponding reflectance or illuminance spectrum, the illuminant is set to CIE D65
+ * (no other color space or illuminant are supported as I'm writing this).
+ * Since I didn't manage to find any other good resource, and spectrum-to-color conversion, while necessary,
+ * is not the focus of this project, I decided to straight-up copy this code from the pbrt-v4 repository:
+ * https://github.com/mmp/pbrt-v4
+ *
+ * NOTE: the color-to-spectrum conversion is very approximated, as I said, this was not the focus of the project.
+ *       I also slightly altered the process of conversion from sRGB to illuminance spectrum, in order to
+ *       better fit my needs.
+ *
+ * The specific file I used as reference is:
+ * https://github.com/mmp/pbrt-v4/blob/39e01e61f8de07b99859df04b271a02a53d9aeb2/src/pbrt/cmd/rgb2spec_opt.cpp#L366
+ * (I say reference since I kept only the fragments of code which where strictly necessary to me, but the right word is "copied")
+ *
+ * More details on the meaning of these constants and the reasoning behind the algorithms can be found here:
+ * https://www.pbr-book.org/4ed/Radiometry,_Spectra,_and_Color/Color#fragment-RGBToSpectrumTablePublicConstants-1
+ *
+ * I very much thank the authors of pbrt, I couldn't have done this without them.
+ *
+ * Matt Pharr, Wenzel Jakob, and Greg Humphreys. 2016.
+ * Physically Based Rendering: From Theory to Implementation (3rd ed.). Morgan Kaufmann Publishers Inc., San Francisco, CA, USA.
+ */
+
 __host__ __device__
 inline float sigmoid_inf_check(float x) {
     if (isinf(x)) return x > 0 ? 1 : 0;
@@ -128,21 +153,6 @@ inline float polynomial(float x, float c2, float c1, float c0) {
     return x * x * c2 + x * c1 + c0;
 }
 
-//__host__
-//inline void srgb_to_illuminance_spectrum(color srgb_color, float* sampled_spectrum) {
-//    float m = std::max({srgb_color.x(), srgb_color.y(), srgb_color.z()});
-//    float scale = 1;
-//    vec3 coeffs = get_sigmoid_coeffs(scale ? srgb_color/scale : color(0, 0, 0));
-//    float lambda = LAMBDA_MIN;
-//    for(int i = 0; i < N_CIE_SAMPLES; i++) {
-//        float x = polynomial(lambda, coeffs.z(), coeffs.y(), coeffs.x());
-//        //std::clog << "lambda: " << lambda << ", x: " << x << std::endl;
-//        float sigmoid_x = scale * sigmoid_inf_check(x) * spectrum_interp(cie_d65, lambda);
-//        printf("lambda: %f, value: %f\n", lambda, sigmoid_x);
-//        sampled_spectrum[i] = sigmoid_x;
-//        lambda += 5.0f;
-//    }
-//}
 __host__
 inline void srgb_to_illuminance_spectrum(color srgb_color, float *sampled_spectrum, float power = 1.0f) {
     float step = (LAMBDA_MAX - LAMBDA_MIN) / N_CIE_SAMPLES;

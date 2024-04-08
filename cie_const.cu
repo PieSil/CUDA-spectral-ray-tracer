@@ -4,6 +4,11 @@
 
 #include "cie_const.cuh"
 
+/*
+ * CIE 1931 color matching functions, sampled at 5nm intervals, from 360nm to 830nm
+ * copied from pbrt-v4 repo: https://github.com/mmp/pbrt-v4/blob/39e01e61f8de07b99859df04b271a02a53d9aeb2/src/pbrt/cmd/rgb2spec_opt.cpp#L4
+ */
+
 const float cie_x[N_CIE_SAMPLES] = {
         0.000129900000, 0.000232100000, 0.000414900000, 0.000741600000, 0.001368000000,
         0.002236000000, 0.004243000000, 0.007650000000, 0.014310000000, 0.023190000000,
@@ -67,6 +72,14 @@ const float cie_z[N_CIE_SAMPLES] = {
         0.000000000000, 0.000000000000, 0.000000000000, 0.000000000000, 0.000000000000,
         0.000000000000, 0.000000000000, 0.000000000000, 0.000000000000, 0.000000000000};
 
+
+/*
+ * CIE standard illuminant D65 power distribution, sampled at 5nm intervals, from 360nm to 830nm
+ * normalized in order to have illuminance = 1
+ * (i.e. Y = 1 when converted in a XYZ color)
+ * copied from pbrt-v4 repo: https://github.com/mmp/pbrt-v4/blob/39e01e61f8de07b99859df04b271a02a53d9aeb2/src/pbrt/cmd/rgb2spec_opt.cpp#L4
+ */
+
 #define N(x) (x / 10566.864005283874576)
 
 const float normalized_cie_d65[N_CIE_SAMPLES] = {
@@ -86,6 +99,10 @@ const float normalized_cie_d65[N_CIE_SAMPLES] = {
         N(54.6998), N(57.4406), N(58.8765), N(60.3125)};
 
 #undef N
+
+/*
+ * CIE standard illuminant D65 power distribution, sampled at 5nm intervals, from 360nm to 830nm
+ */
 
 const float cie_d65[N_CIE_SAMPLES] = {
         46.6383, 49.3637, 52.0891, 51.0323, 49.9755, 52.3118, 54.6482,

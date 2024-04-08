@@ -4,6 +4,10 @@
 
 #include "spectrum.cuh"
 
+/*
+ * copied from pbrt-v4 repo (called cie-interp in the original code):
+ * https://github.com/mmp/pbrt-v4/blob/39e01e61f8de07b99859df04b271a02a53d9aeb2/src/pbrt/cmd/rgb2spec_opt.cpp#L4
+ */
 __host__ __device__
 float spectrum_interp(const float* spectrum, float lambda, int n_samples) {
     lambda -= LAMBDA_MIN;
@@ -17,6 +21,13 @@ float spectrum_interp(const float* spectrum, float lambda, int n_samples) {
     return (1.0f - weight) * spectrum[offset] + weight * spectrum[offset + 1];
 }
 
+/**
+ * @brief Initialized array of wavelengths and places hero wavelength at position 0.
+ *
+ * @param spectrum The destination array.
+ * @param n_lambdas The number of wavelengths.
+ * @param local_rand_state Random state for random number generation on device.
+ */
 __device__
 void init_hero_wavelength(float *spectrum, uint n_lambdas, curandState *local_rand_state) {
     float step = (LAMBDA_MAX - LAMBDA_MIN) / float(n_lambdas);

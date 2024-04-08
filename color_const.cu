@@ -4,6 +4,12 @@
 
 #include "color_const.cuh"
 
+/*
+ * Matrices used to convert from sRGB to XYZ and vice-versa
+ * d50 prefix indicates the Bradford-corrected matrices, unused for now
+ * source: http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+ */
+
 const float d65_sRGB_to_XYZ[3][3] = {{0.4124564f, 0.3575761f, 0.1804375f},
                                             {0.2126729f, 0.7151522f, 0.0721750f},
                                             {0.0193339f, 0.1191920f, 0.9503041f}};

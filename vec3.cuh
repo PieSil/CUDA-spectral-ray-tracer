@@ -153,27 +153,41 @@ __host__ __device__ inline vec3 unit_vector(vec3 v) {
     return v / v.length();
 }
 
+/**
+ * @brief Compyte Compute reflection of vector v given a surface with normal n.
+ *
+ * Compute reflection of vector v given a surface with normal n
+ * dot(v, n): gets the (scalar) component of v along the direction of n
+ * dot(v, n) * n: gets the vector of length dot(v,n) along the direction of n
+ * v-dot(v, n)*n: negates the component of v parallel to the direction of n
+ * v-2*dot(v, n)*n: reflects v wrt the direction of n.
+ *
+ * @param v In vector.
+ * @param n Normal of the surface at the intersection point.
+ *
+ * @return Reflected vector.
+ */
 __host__ __device__
 inline vec3 reflect(const vec3&v, const vec3&n) {
-    /*
-     * Compute reflection of vector v given a surface with normal n
-     * dot(v, n): gets the (scalar) component of v along the direction of n
-     * dot(v, n) * n: gets the vector of length dot(v,n) along the direction of n
-     * v-dot(v, n)*n: negates the component of v parallel to the direction of n
-     * v-2*dot(v, n)*n: reflects v wrt the direction of n
-     */
 
     return v - 2*dot(v,n)*n;
 }
 
+/**
+ * @brief Compute the refraction of v given a surface with normal n.
+ *
+ * For the full math please refer to chapter 11.2 of:
+ * Ray Tracing in One Weekend by  Peter Shirley, Trevor David Black, Steve Hollasch
+ * (https://raytracing.github.io/books/RayTracingInOneWeekend.html)
+ *
+ * @param uv In vector.
+ * @param n Normal of the surface at the intersection point.
+ * @param etai_over_etat IOR of previous transmission medium over IOR of new transmission medium.
+ *
+ * @return Refracted vector.
+ */
 __host__ __device__
 inline vec3 refract(const vec3& uv, const vec3& n, float etai_over_etat) {
-
-    /*
-     * For the full math please refer to to chapter 11.2 of:
-     * Ray Tracing in One Weekend by  Peter Shirley, Trevor David Black, Steve Hollasch
-     * (https://raytracing.github.io/books/RayTracingInOneWeekend.html)
-     */
 
     auto cos_theta = fmin(dot(-uv, n), 1.0f);
     vec3 r_out_perp =  etai_over_etat * (uv + cos_theta*n);
