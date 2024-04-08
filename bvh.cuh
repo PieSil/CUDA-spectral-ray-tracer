@@ -11,6 +11,15 @@
 
 #define MAX_DEPTH 64
 
+/*
+ * bvh build logic and traversal inspired from:
+ * https://developer.nvidia.com/blog/thinking-parallel-part-ii-tree-traversal-gpu/
+ * https://developer.nvidia.com/blog/thinking-parallel-part-iii-tree-construction-gpu/
+ *
+ * and adapted to the "Ray Tracing: The Next Week" book way of building the bvh (chapters 3.7 to 3.9):
+ * https://raytracing.github.io/books/RayTracingTheNextWeek.html#boundingvolumehierarchies/thebvhnodeclass
+ */
+
 
 class hittable_bbox : public hittable {
     //a wrapper for the aabb class that allows to treat it as a hittable
