@@ -8,6 +8,9 @@
 #include "rendering.cuh"
 #include "camera_builder.cuh"
 
+#define SAMPLES_PER_PIXEL 500
+#define BOUNCE_LIMIT 10
+
 int main() {
     std::cout << "Hello, World!" << std::endl;
     return 0;
