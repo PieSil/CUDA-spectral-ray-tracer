@@ -9,5 +9,6 @@
 #include <cmath>
 #include <random>
 #include <limits>
+#include <ctime>
 
 #endif //SPECTRAL_RT_PROJECT_STD_LIBS_CUH

@@ -5,6 +5,7 @@
 #include "hittable.cuh"
 #include "materials/material.cuh"
 #include "bvh.cuh"
+#include "rendering.cuh"
 
 int main() {
     std::cout << "Hello, World!" << std::endl;
