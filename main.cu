@@ -6,6 +6,7 @@
 #include "materials/material.cuh"
 #include "bvh.cuh"
 #include "rendering.cuh"
+#include "camera_builder.cuh"
 
 int main() {
     std::cout << "Hello, World!" << std::endl;

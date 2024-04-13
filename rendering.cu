@@ -145,20 +145,18 @@ void save_to_fb(color pixel_color, uint pixel_index, uint samples_per_pixel, vec
 }
 
 __global__
-void spectral_render_kernel(vec3 *fb, bvh* bvh, const uint samples_per_pixel, const uint max_x, const uint max_y,
-                                   const uint bounce_limit, const vec3 pixel_delta_u, const vec3 pixel_delta_v,
-                                   const point3 pixel00_loc, const float defocus_angle, const point3 camera_center,
-                                   const vec3 defocus_disk_v, const float *background_spectrum, curandState *rand_state,
-                                   const vec3 defocus_disk_u) {
+void
+spectral_render_kernel(vec3 *fb, bvh *bvh, camera_data cam_data, float *background_spectrum,
+                       const uint samples_per_pixel, const uint bounce_limit, curandState *rand_state) {
     uint i = threadIdx.x + blockIdx.x * blockDim.x;
     uint j = threadIdx.y + blockIdx.y * blockDim.y;
 
     extern __shared__ char array[];
 
-    if((i >= max_x) || j >= max_y)
+    if((i >= cam_data.width) || j >= cam_data.height)
         return;
 
-    uint pixel_index = j*max_x + i;
+    uint pixel_index = j*cam_data.width + i;
 
     //INITIALIZE SHARED MEMORY HERE IF NEEDED
     uint thread_in_block_idx = threadIdx.x*blockDim.y + threadIdx.y;
@@ -201,8 +199,10 @@ void spectral_render_kernel(vec3 *fb, bvh* bvh, const uint samples_per_pixel, co
         * trace the ray from camera center to current pixel sample
         * then sum the sample color obtained from the spectrum to current pixel
         */
-        ray r = get_ray(i, j, pixel00_loc, pixel_delta_u, pixel_delta_v, camera_center, defocus_disk_u,
-                        defocus_disk_v, defocus_angle, &local_rand_state);
+        ray r = get_ray(i, j, cam_data.pixel00_loc, cam_data.pixel_delta_u, cam_data.pixel_delta_v,
+                        cam_data.camera_center, cam_data.defocus_disk_u, cam_data.defocus_disk_v,
+                        cam_data.defocus_angle, &local_rand_state);
+
         ray_bounce(r, sh_background_spectrum, bvh, bounce_limit, &local_rand_state);
         pixel_color += dev_spectrum_to_XYZ(r.wavelengths, r.power_distr, N_RAY_WAVELENGTHS);
     }
@@ -262,21 +262,17 @@ void call_render_kernel(bvh *bvh, uint samples_per_pixel, const camera *cam, uin
     clock_t start, stop;
     start = clock();
 
+    camera_data cam_data = camera_data(cam->getImageWidth(), cam->getImageHeight(), cam->getPixelDeltaU(), cam->getPixelDeltaV(),
+                                       cam->getPixel00Loc(), cam->getDefocusAngle(), cam->getCenter(),
+                                       cam->getDefocusDiskU(), cam->getDefocusDiskV());
+
     spectral_render_kernel<<<blocks, threads, shared_mem_size>>>(dev_fb,
                                                                  bvh,
-                                                                 samples_per_pixel,
-                                                                 cam->getImageWidth(),
-                                                                 cam->getImageHeight(),
-                                                                 bounce_limit,
-                                                                 cam->getPixelDeltaU(),
-                                                                 cam->getPixelDeltaV(),
-                                                                 cam->getPixel00Loc(),
-                                                                 cam->getDefocusAngle(),
-                                                                 cam->getCenter(),
-                                                                 cam->getDefocusDiskV(),
+                                                                 cam_data,
                                                                  dev_background_spectrum,
-                                                                 dev_rand_state,
-                                                                 cam->getDefocusDiskU());
+                                                                 samples_per_pixel,
+                                                                 bounce_limit,
+                                                                 dev_rand_state);
 
 
     checkCudaErrors(cudaGetLastError());

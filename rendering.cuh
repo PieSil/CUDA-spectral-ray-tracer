@@ -13,6 +13,24 @@
 #include "camera.cuh"
 #include "../materials/material.cuh"
 
+struct camera_data {
+
+    camera_data(uint w, uint h, vec3 delta_u, vec3 delta_v, point3 p00_loc,float def_angle, point3 center, vec3 def_disk_u,
+             vec3 def_disk_v) : width(w), height(h), pixel_delta_u(delta_u), pixel_delta_v(delta_v),
+             pixel00_loc(p00_loc),  defocus_angle(def_angle), camera_center(center), defocus_disk_u(def_disk_u),
+             defocus_disk_v(def_disk_v){};
+
+    uint width;
+    uint height;
+    vec3 pixel_delta_u;
+    vec3 pixel_delta_v;
+    point3 pixel00_loc;
+    float defocus_angle;
+    point3 camera_center;
+    vec3 defocus_disk_u;
+    vec3 defocus_disk_v;
+};
+
 class camera;
 
 __device__
