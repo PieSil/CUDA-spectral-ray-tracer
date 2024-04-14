@@ -22,10 +22,10 @@ public:
     camera() {};
 
     __host__
-    void render(bvh *bvh, uint bounce_limit, uint samples_per_pixel) const;
+    void render(bvh **bvh, uint bounce_limit, uint samples_per_pixel) const;
 
     __host__
-    void render(bvh *bvh, uint bounce_limit, uint samples_per_pixel, dim3 blocks, dim3 threads) const;
+    void render(bvh **bvh, uint bounce_limit, uint samples_per_pixel, dim3 blocks, dim3 threads) const;
 
     //getters
 

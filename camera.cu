@@ -6,7 +6,7 @@
 
 __host__
 void
-camera::render(bvh *bvh, uint bounce_limit, uint samples_per_pixel, dim3 blocks, dim3 threads) const {
+camera::render(bvh **bvh, uint bounce_limit, uint samples_per_pixel, dim3 blocks, dim3 threads) const {
 
     //Starts the render kernel on the GPU
     call_render_kernel(bvh, samples_per_pixel, this, bounce_limit, blocks, threads);
@@ -66,7 +66,7 @@ __host__ void camera::initialize() {
 }
 
 __host__ void
-camera::render(bvh *bvh, uint bounce_limit, uint samples_per_pixel) const {
+camera::render(bvh **bvh, uint bounce_limit, uint samples_per_pixel) const {
     uint tx = 8;
     uint ty = 8;
 

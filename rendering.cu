@@ -8,7 +8,7 @@
 //TODO: fix comments
 
 __device__
-void ray_bounce(ray &r, const float *background_emittance_spectrum, bvh* bvh, const uint bounce_limit, curandState *local_rand_state) {
+void ray_bounce(ray &r, const float *background_emittance_spectrum, bvh** bvh, const uint bounce_limit, curandState *local_rand_state) {
 
     //TODO: finish this
 
@@ -17,7 +17,7 @@ void ray_bounce(ray &r, const float *background_emittance_spectrum, bvh* bvh, co
 
     for (int n_bounces = 0; n_bounces < bounce_limit; n_bounces++) {
 
-        if (!bvh->hit(r, 0.0f, FLT_MAX, rec)) {
+        if (!(*bvh)->hit(r, 0.0f, FLT_MAX, rec)) {
             //float random = cuda_random_float(local_rand_state);
 
             for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
@@ -140,13 +140,13 @@ void render_init(int max_x, int max_y, curandState *rand_state) {
 
 __device__
 void save_to_fb(color pixel_color, uint pixel_index, uint samples_per_pixel, vec3* fb) {
-    fb[pixel_index] = expand_sRGB(XYZ_to_sRGB(pixel_color/float(samples_per_pixel), reinterpret_cast<const float *>(dev_d65_sRGB_to_XYZ)));
+    fb[pixel_index] = expand_sRGB(XYZ_to_sRGB(pixel_color/float(samples_per_pixel), reinterpret_cast<const float *>(dev_d65_XYZ_to_sRGB)));
     //fb[pixel_index] = pixel_color/float(samples_per_pixel);
 }
 
 __global__
 void
-spectral_render_kernel(vec3 *fb, bvh *bvh, camera_data cam_data, float *background_spectrum,
+spectral_render_kernel(vec3 *fb, bvh **bvh, camera_data cam_data, float *background_spectrum,
                        const uint samples_per_pixel, const uint bounce_limit, curandState *rand_state) {
     uint i = threadIdx.x + blockIdx.x * blockDim.x;
     uint j = threadIdx.y + blockIdx.y * blockDim.y;
@@ -203,7 +203,29 @@ spectral_render_kernel(vec3 *fb, bvh *bvh, camera_data cam_data, float *backgrou
                         cam_data.camera_center, cam_data.defocus_disk_u, cam_data.defocus_disk_v,
                         cam_data.defocus_angle, &local_rand_state);
 
+        /*
+        if(threadIdx.x == 0 && threadIdx.y == 0 && blockIdx.x == 0 && blockIdx.y== 0) {
+            printf("Pre ray power: \n");
+            for(int m = 0; m < N_RAY_WAVELENGTHS; m++) {
+                printf("Lambda: %f, power: %f\n", r.wavelengths[m], r.power_distr[m]);
+            }
+
+            printf("\n");
+        }
+        */
         ray_bounce(r, sh_background_spectrum, bvh, bounce_limit, &local_rand_state);
+
+        /*
+        if(threadIdx.x == 0 && threadIdx.y == 0 && blockIdx.x == 0 && blockIdx.y== 0) {
+            printf("Post ray power: \n");
+            for(int m = 0; m < N_RAY_WAVELENGTHS; m++) {
+                printf("Lambda: %f, power: %f\n", r.wavelengths[m], r.power_distr[m]);
+            }
+
+            printf("\n");
+        }
+        */
+
         pixel_color += dev_spectrum_to_XYZ(r.wavelengths, r.power_distr, N_RAY_WAVELENGTHS);
     }
 
@@ -216,7 +238,7 @@ spectral_render_kernel(vec3 *fb, bvh *bvh, camera_data cam_data, float *backgrou
 }
 
 __host__
-void call_render_kernel(bvh *bvh, uint samples_per_pixel, const camera *cam, uint bounce_limit, dim3 blocks,
+void call_render_kernel(bvh **bvh, uint samples_per_pixel, const camera *cam, uint bounce_limit, dim3 blocks,
                         dim3 threads) {
 
     int image_width = cam->getImageWidth();
@@ -240,7 +262,7 @@ void call_render_kernel(bvh *bvh, uint samples_per_pixel, const camera *cam, uin
     float h_background_spectrum[N_CIE_SAMPLES];
     float* dev_background_spectrum;
     checkCudaErrors(cudaMalloc((void**)&dev_background_spectrum, N_CIE_SAMPLES*sizeof(float)));
-    srgb_to_spectrum(cam->getBackground(), h_background_spectrum);
+    srgb_to_illuminance_spectrum(cam->getBackground(), h_background_spectrum);
     checkCudaErrors(cudaMemcpy(dev_background_spectrum, h_background_spectrum, N_CIE_SAMPLES * sizeof(float), cudaMemcpyHostToDevice));
 
 
