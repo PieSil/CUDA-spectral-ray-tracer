@@ -29,9 +29,6 @@
 #include "camera_builder.cuh"
 #include "../materials/material.cuh"
 
-//TODO: create methods to access kernel in source file
-//TODO: function to build world
-
 namespace scene {
     __device__
     void device_random_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials);
