@@ -22,6 +22,9 @@ inline void init_device_symbols() {
     checkCudaErrors(cudaMemcpyToSymbol(dev_cie_y, cie_y, N_CIE_SAMPLES*sizeof(float)));
     checkCudaErrors(cudaMemcpyToSymbol(dev_cie_z, cie_z, N_CIE_SAMPLES*sizeof(float)));
 
+    /* cie d65 illuminant curve*/
+    checkCudaErrors(cudaMemcpyToSymbol(dev_normalized_cie_d65, normalized_cie_d65, N_CIE_SAMPLES*sizeof(float)));
+
     /*
      * color to spectrum conversion
      * NOTE: Data table is omitted since it's too big for constant memory

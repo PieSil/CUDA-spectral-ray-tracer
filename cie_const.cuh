@@ -16,8 +16,10 @@ extern const float cie_y[N_CIE_SAMPLES];
 extern const float cie_z[N_CIE_SAMPLES];
 extern const float normalized_cie_d65[N_CIE_SAMPLES];
 extern const float cie_d65[N_CIE_SAMPLES];
+
 __constant__ inline float dev_cie_x[N_CIE_SAMPLES];
 __constant__ inline float dev_cie_y[N_CIE_SAMPLES];
 __constant__ inline float dev_cie_z[N_CIE_SAMPLES];
+__constant__ inline float dev_normalized_cie_d65[N_CIE_SAMPLES];
 
 #endif //COLOR_CONVERSION_CIE_CONST_H
