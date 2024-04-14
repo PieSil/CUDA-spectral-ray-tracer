@@ -161,8 +161,7 @@ inline void srgb_to_illuminance_spectrum(color srgb_color, float *sampled_spectr
 
     for (int i = 0; i < N_CIE_SAMPLES; i++) {
         float x = polynomial(lambda, coeffs.z(), coeffs.y(), coeffs.x());
-        float sigmoid_x = power*power * sigmoid_inf_check(x)  * spectrum_interp(normalized_cie_d65, lambda);
-        printf("lambda: %f, value: %f\n", lambda, sigmoid_x);
+        float sigmoid_x = pow(power, 2.0f) * sigmoid_inf_check(x) * spectrum_interp(normalized_cie_d65, lambda);
         sampled_spectrum[i] = sigmoid_x;
         lambda += step;
 
@@ -177,8 +176,7 @@ inline void dev_srgb_to_illuminance_spectrum(color srgb_color, float *sampled_sp
 
     for (int i = 0; i < N_CIE_SAMPLES; i++) {
         float x = polynomial(lambda, coeffs.z(), coeffs.y(), coeffs.x());
-        float sigmoid_x = power*power * sigmoid_inf_check(x)  * spectrum_interp(normalized_cie_d65, lambda);
-        printf("lambda: %f, value: %f\n", lambda, sigmoid_x);
+        float sigmoid_x = pow(power, 2.0f) * sigmoid_inf_check(x) * spectrum_interp(dev_normalized_cie_d65, lambda);
         sampled_spectrum[i] = sigmoid_x;
         lambda += step;
 
@@ -195,7 +193,6 @@ inline void srgb_to_spectrum(color srgb_color, float *sampled_spectrum) {
 
         float x = polynomial(lambda, coeffs.z(), coeffs.y(), coeffs.x());
         float sigmoid_x = sigmoid_inf_check(x);
-        printf("lambda: %f, value: %f\n", lambda, sigmoid_x);
         sampled_spectrum[i] = sigmoid_x;
         lambda += step;
 
@@ -212,7 +209,6 @@ inline void dev_srgb_to_spectrum(color srgb_color, float *sampled_spectrum, floa
 
         float x = polynomial(lambda, coeffs.z(), coeffs.y(), coeffs.x());
         float sigmoid_x = sigmoid_inf_check(x);
-        printf("lambda: %f, value: %f\n", lambda, sigmoid_x);
         sampled_spectrum[i] = sigmoid_x;
         lambda += step;
 
