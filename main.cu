@@ -1,17 +1,22 @@
 #include <iostream>
-#include "vec3.cuh"
+#include "scene.cuh"
 #include "device_init.cuh"
-#include "color_to_spectrum.cuh"
-#include "hittable.cuh"
-#include "materials/material.cuh"
-#include "bvh.cuh"
-#include "rendering.cuh"
-#include "camera_builder.cuh"
 
 #define SAMPLES_PER_PIXEL 500
 #define BOUNCE_LIMIT 10
 
+using namespace scene;
+
 int main() {
-    std::cout << "Hello, World!" << std::endl;
+    init_device_symbols();
+
+    scene_manager sm = scene_manager();
+    result res = sm.getResult();
+    if (res.success) {
+        clog << res.msg << endl;
+        sm.render(BOUNCE_LIMIT, SAMPLES_PER_PIXEL);
+    } else {
+        cerr << res.msg << endl;
+    }
     return 0;
 }
