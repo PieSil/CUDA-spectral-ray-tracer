@@ -87,6 +87,10 @@ bool bvh_node::hit(const ray &r, float min, float max, hit_record &rec) const {
 
 __device__
 bool bvh::hit(const ray &r, float min, float max, hit_record &rec) const {
+
+    if(!is_valid())
+        return false;
+
     // Allocate traversal stack from thread-local memory,
     // and push NULL to indicate that there are no postponed nodes.
     bool hit_anything = false;
