@@ -2,10 +2,12 @@
 // Created by pietr on 13/04/2024.
 //
 
-#include "world.cuh"
+#include "scene.cuh"
+
+using namespace scene;
 
 __global__
-void create_bvh_kernel(hittable** d_world, size_t world_size, bvh** d_bvh) {
+void create_bvh_kernel(hittable **d_world, size_t world_size, bvh **d_bvh, bool *success) {
 
     curandState _rand_state = curandState();
     curandState* rand_state = &_rand_state;
@@ -13,17 +15,71 @@ void create_bvh_kernel(hittable** d_world, size_t world_size, bvh** d_bvh) {
 
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         auto new_bvh = new bvh(d_world, world_size, rand_state);
-        if (new_bvh->is_valid()) {
-            *d_bvh = new_bvh;
-        } else {
-            delete new_bvh;
-            *d_bvh = nullptr;
+        *d_bvh = new_bvh;
+        *success = new_bvh->is_valid();
+    }
+}
+
+__global__
+void create_world_kernel(uint world_selector, hittable **d_list, material **d_mat_list, int *world_size, int *n_materials,
+                    float* dev_sRGBToSpectrum_Data) {
+
+    /*
+     * initialize hittables and materials based on a world selector
+     */
+
+    if (threadIdx.x == 0 && blockIdx.x == 0) {
+        switch(world_selector){
+            case 0:
+                device_random_world(d_list, d_mat_list, world_size, n_materials);
+                break;
+            case 1:
+                device_quad_world(d_list, d_mat_list);
+                break;
+
+            case 2:
+                device_simple_light(d_list, d_mat_list);
+                break;
+            case 3:
+                device_cornell_box(d_list, d_mat_list);
+                break;
+            default:
+                device_simple_light(d_list, d_mat_list);
+                //device_random_world(d_list, d_mat_list, world_size, n_materials);
         }
+
+        /*
+         * precompute reflectance and emittance spectrum
+         */
+
+        for(int i = 0; i < *n_materials; i++) {
+            d_mat_list[i]->compute_albedo_spectrum(dev_sRGBToSpectrum_Data);
+            d_mat_list[i]->compute_emittance_spectrum(dev_sRGBToSpectrum_Data);
+        }
+
+    }
+}
+
+__global__ void free_world_kernel(hittable **d_list, bvh **dev_bvh, material **d_mat_list, int world_size,
+                                  int n_materials) {
+
+    if (d_list != nullptr && threadIdx.x == 0 && blockIdx.x == 0) {
+
+        for (int i = 0; i < n_materials; i++) {
+            delete *(d_mat_list+i);
+        }
+
+        for (int i = 0; i < world_size; i++) {
+            delete *(d_list+i);
+        }
+
+        delete *dev_bvh;
+
     }
 }
 
 __device__
-void device_random_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials) {
+void scene::device_random_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials) {
     curandState _rand_state = curandState();
     curandState* rand_state = &_rand_state;
     curand_init(1999, 0, 0, rand_state);
@@ -94,7 +150,7 @@ void device_random_world(hittable **d_list, material **d_mat_list, int *world_si
 }
 
 __device__
-void device_quad_world(hittable **d_list, material **d_mat_list) {
+void scene::device_quad_world(hittable **d_list, material **d_mat_list) {
     d_mat_list[0] = new material();
     *d_mat_list[0] = material::lambertian(color(1.0, 0.2, 0.2));
     d_mat_list[1] = new material();
@@ -114,38 +170,19 @@ void device_quad_world(hittable **d_list, material **d_mat_list) {
 }
 
 __device__
-void device_simple_light(hittable **d_list, material **d_mat_list) {
-    //d_mat_list[0] = new lambertian(color(1.0, 0.2, 0.2));
+void scene::device_simple_light(hittable **d_list, material **d_mat_list) {
 
 //    d_mat_list[0] = new material();
 //    *(d_mat_list[0]) = material::lambertian(color(0.0f, 1.0f, 0.0f));
-    //*(d_mat_list[0]) = generic_material(color(1.0f, 0.2f, 0.2f), color(0.0f, 0.0f, 0.0f), color(0.0f, 0.0f, 0.0f), 0.0f, false, 1.0f);
-
-//    d_mat_list[1] = new material();
-//    *(d_mat_list[1]) = material::metallic(color(.5f, .5f, .5f), .5f);
-    //*(d_mat_list[1]) = material::dielectric(1.5f);
-    //*(d_mat_list[1]) = material::lambertian(color(1.0f, 0.0f, 0.0f));
-    //*(d_mat_list[1]) = generic_material(color(1.0f, 1.0f, 1.0f), color(1.0f, 1.0f, 1.0f), color(0.0f, 0.0f, 0.0f), 1.0f, true, 1.5f);
-    //d_mat_list[2] = new material;
-    //*d_mat_list[2] = emissive(color(4.f, 4.f, 4.f));
-
-    //d_list[0] = new sphere(point3(0, -1000, 0), 1000, d_mat_list[0]);
-    //d_list[1] = new sphere(point3(0, 2, 0), 2, d_mat_list[1]);
-
-    //d_list[2] = pl;
-    //d_list[2] = new quad(point3(3, 1, -2), vec3(2, 0, 0), vec3(0,2,0), d_mat_list[2]);
-
-    //create list of lights
-//    d_l_list->n_lights = 1;
-//    d_l_list->max_rays = 4;
-//    d_l_list->lights = new light *[d_l_list->n_lights];
 //
-//    d_l_list->lights[0] = new point_light(point3(4, 2, -2), 10.0f, color(1.0f, 1.0f, 1.0f));
-//    //d_l_list->lights[1] = new point_light(point3(0, 6, 0), 15.0f, color(1.0f, 1.0f, 1.0f));
+//    d_mat_list[1] = new material();
+    //*(d_mat_list[1]) = material::metallic(color(.5f, .5f, .5f), .5f);
+    //*(d_mat_list[1]) = material::dielectric(1.5f);
+//    *(d_mat_list[1]) = material::lambertian(color(1.0f, 0.0f, 0.0f));
 }
 
 __device__
-void device_cornell_box(hittable **d_list, material **d_mat_list) {
+void scene::device_cornell_box(hittable **d_list, material **d_mat_list) {
     d_mat_list[0] = new material();
     *d_mat_list[0] = material::lambertian(color(.65, .05, .05));
     d_mat_list[1] = new material();
@@ -164,58 +201,13 @@ void device_cornell_box(hittable **d_list, material **d_mat_list) {
 
 }
 
-__global__
-void
-create_world_kernel(uint world_selector, hittable **d_list, material **d_mat_list, int *world_size, int *n_materials,
-             float* dev_sRGBToSpectrum_Data) {
-    if (threadIdx.x == 0 && blockIdx.x == 0) {
-        switch(world_selector){
-            case 0:
-                device_random_world(d_list, d_mat_list, world_size, n_materials);
-                break;
-            case 1:
-                device_quad_world(d_list, d_mat_list);
-                break;
-
-            case 2:
-                device_simple_light(d_list, d_mat_list);
-                break;
-            case 3:
-                device_cornell_box(d_list, d_mat_list);
-                break;
-            default:
-                device_simple_light(d_list, d_mat_list);
-                //device_random_world(d_list, d_mat_list, world_size, n_materials);
-        }
-
-        for(int i = 0; i < *n_materials; i++) {
-            d_mat_list[i]->compute_albedo_spectrum(dev_sRGBToSpectrum_Data);
-            d_mat_list[i]->compute_emittance_spectrum(dev_sRGBToSpectrum_Data);
-        }
-
-    }
-}
-
-__global__ void free_world_kernel(hittable **d_list, bvh **dev_bvh, material **d_mat_list, int world_size,
-                           int n_materials) {
-
-    if (d_list != nullptr && threadIdx.x == 0 && blockIdx.x == 0) {
-
-        for (int i = 0; i < n_materials; i++) {
-            delete *(d_mat_list+i);
-        }
-
-        for (int i = 0; i < world_size; i++) {
-            delete *(d_list+i);
-        }
-
-        delete *dev_bvh;
-
-    }
-}
-
 __host__
-void init_world_parameters(uint world_selector, int *world_size_ptr, int *n_materials_ptr) {
+void scene::init_world_parameters(uint world_selector, int *world_size_ptr, int *n_materials_ptr) {
+
+    /*
+     * select correct parameters (hard-coded) based on world selector
+     */
+
     switch (world_selector) {
         case 0:
             //random world
@@ -248,7 +240,7 @@ void init_world_parameters(uint world_selector, int *world_size_ptr, int *n_mate
 }
 
 __host__
-camera_builder random_world_cam_builder() {
+camera_builder scene::random_world_cam_builder() {
     float vfov = 20.0f;
     point3 lookfrom = point3(13,2,3);
     point3 lookat = point3(0,0,0);
@@ -270,7 +262,7 @@ camera_builder random_world_cam_builder() {
 }
 
 __host__
-camera_builder quad_world_camera_builder() {
+camera_builder scene::quad_world_camera_builder() {
     float vfov = 80.0f;
     point3 lookfrom = point3(0,0,9);
     point3 lookat = point3(0,0,0);
@@ -292,7 +284,7 @@ camera_builder quad_world_camera_builder() {
 }
 
 __host__
-camera_builder simple_light_camera_builder() {
+camera_builder scene::simple_light_camera_builder() {
     float vfov = 20.0f;
     point3 lookfrom = point3(26,3,6);
     //point3 lookfrom = point3(3,26,6);
@@ -320,7 +312,7 @@ camera_builder simple_light_camera_builder() {
 }
 
 __host__
-camera_builder cornell_box_camera_builder() {
+camera_builder scene::cornell_box_camera_builder() {
     float vfov = 40.0f;
     point3 lookfrom = point3(278,278,-800);
     point3 lookat = point3(278,278,0);
@@ -340,4 +332,137 @@ camera_builder cornell_box_camera_builder() {
             setDefocusAngle(defocus_angle).
             setFocusDist(focus_dist).
             setBackground(background);
+}
+
+__host__
+bool scene::create_bvh(hittable** d_world, size_t world_size, bvh** d_bvh) {
+    bool h_success;
+    bool* d_success = nullptr;
+
+    checkCudaErrors(cudaMalloc((void**)&d_success, sizeof(bool)));
+    create_bvh_kernel<<<1, 1>>>(d_world, world_size, d_bvh, d_success);
+    checkCudaErrors(cudaMemcpy(&h_success, d_success, sizeof(bool), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaFree(d_success));
+    checkCudaErrors(cudaDeviceSynchronize());
+
+    return h_success;
+}
+
+__host__
+void scene::create_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials,
+                  float* dev_sRGBToSpectrum_Data) {
+    create_world_kernel<<<1, 1>>>(WORLD_SELECTOR, d_list, d_mat_list, world_size, n_materials, dev_sRGBToSpectrum_Data);
+}
+
+__host__
+void scene::free_world(hittable **d_list, bvh **dev_bvh, material **d_mat_list, int world_size,
+                int n_materials) {
+    free_world_kernel<<<1, 1>>>(d_list, dev_bvh, d_mat_list, world_size, n_materials);
+
+}
+
+const result scene_manager::init_world() {
+        /*
+     * Allocate memory on GPU for hittables and materials, initialize their contents based on a world selector
+     * then build a BVH
+     */
+
+        int *dev_n_materials_ptr = nullptr;
+        int *dev_world_size_ptr = nullptr;
+
+        //select the correct values for size and #materials
+        init_world_parameters(WORLD_SELECTOR, h_world_size_ptr, h_n_materials_ptr);
+
+        //copy parameters to device memory so they can be modified from device code
+        checkCudaErrors(cudaMalloc((void **) &dev_n_materials_ptr, sizeof(int)));
+        checkCudaErrors(cudaMalloc((void **) &dev_world_size_ptr, sizeof(int)));
+        checkCudaErrors(cudaMemcpy(dev_n_materials_ptr, h_n_materials_ptr, sizeof(int), cudaMemcpyHostToDevice));
+        checkCudaErrors(cudaMemcpy(dev_world_size_ptr, h_world_size_ptr, sizeof(int), cudaMemcpyHostToDevice));
+
+        //allocate space for world
+        checkCudaErrors(cudaMalloc((void **) &dev_world, *(h_world_size_ptr) * sizeof(hittable *)));
+        if (*(h_world_size_ptr) > 0 && dev_world == nullptr) {
+            return {false, "Not enough memory on device for dev_list\n"};
+        }
+
+        //allocate space for materials
+        checkCudaErrors(cudaMalloc((void **) &dev_mat_list, (*h_n_materials_ptr) * sizeof(material *)));
+        if ((*h_n_materials_ptr) > 0 && dev_mat_list == nullptr) {
+            return {false, "Not enough memory on device for dev_mat_list\n"};
+        }
+
+        //allocate space for bvh
+        checkCudaErrors(cudaMalloc((void **) &dev_bvh, sizeof(bvh *)));
+        if (dev_bvh == nullptr) {
+            return {false, "Not enough memory on device for BVH\n"};
+        }
+
+        //copy constant to device global memory (cannot use constant memory since table is too big)
+        float *dev_ColorToSpectrum_Data;
+        checkCudaErrors(cudaMalloc((void **) &dev_ColorToSpectrum_Data, 3 * 64 * 64 * 64 * 3 * sizeof(float)));
+        checkCudaErrors(
+                cudaMemcpy(dev_ColorToSpectrum_Data, sRGBToSpectrumTable_Data, 3 * 64 * 64 * 64 * 3 * sizeof(float),
+                           cudaMemcpyHostToDevice));
+
+        //build hittables and materials
+        create_world(dev_world, dev_mat_list, dev_world_size_ptr, dev_n_materials_ptr, dev_ColorToSpectrum_Data);
+
+        //cleanup
+        checkCudaErrors(cudaFree(dev_ColorToSpectrum_Data));
+        checkCudaErrors(cudaMemcpy(h_world_size_ptr, dev_world_size_ptr, sizeof(int), cudaMemcpyDeviceToHost));
+        checkCudaErrors(cudaMemcpy(h_n_materials_ptr, dev_n_materials_ptr, sizeof(int), cudaMemcpyDeviceToHost));
+
+        checkCudaErrors(cudaFree(dev_world_size_ptr));
+        checkCudaErrors(cudaFree(dev_n_materials_ptr));
+
+        checkCudaErrors(cudaGetLastError());
+        checkCudaErrors(cudaDeviceSynchronize());
+
+        //build bvh
+        bool bvh_valid = create_bvh(dev_world, *h_world_size_ptr, dev_bvh);
+        if (!bvh_valid && *h_world_size_ptr > 0) {
+            return {false, "Error building BVH\n"};
+        }
+
+        checkCudaErrors(cudaGetLastError());
+        checkCudaErrors(cudaDeviceSynchronize());
+
+        world_inited = true;
+        return {true, "World created"};
+}
+
+__host__
+void scene_manager::init_camera() {
+    switch (WORLD_SELECTOR) {
+        case 0:
+            cam = random_world_cam_builder().getCamera();
+            break;
+        case 1:
+            cam = quad_world_camera_builder().getCamera();
+            break;
+        case 2:
+            cam = simple_light_camera_builder().getCamera();
+            break;
+        case 3:
+            cam = cornell_box_camera_builder().getCamera();
+            break;
+
+        default:
+            cam = random_world_cam_builder().getCamera();
+            break;
+    }
+
+    cam_inited = true;
+}
+
+__host__
+void scene_manager::destroy_world() {
+    free_world(dev_world, dev_bvh, dev_mat_list, *h_world_size_ptr, *h_n_materials_ptr);
+    checkCudaErrors(cudaFree(dev_world));
+    checkCudaErrors(cudaFree(dev_world));
+    checkCudaErrors(cudaFree(dev_bvh));
+    checkCudaErrors(cudaFree(dev_mat_list));
+
+    free(h_world_size_ptr);
+    free(h_n_materials_ptr);
 }
