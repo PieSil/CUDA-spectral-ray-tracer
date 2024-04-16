@@ -5,7 +5,6 @@ project(spectral-rt-project CXX CUDA)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g -O0")
 set(CMAKE_CUDA_STANDARD 17)
 
 
