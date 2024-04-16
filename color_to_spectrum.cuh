@@ -133,8 +133,11 @@ inline vec3 dev_get_sigmoid_coeffs(color in_color, float* dev_sRGBToSpectrumTabl
             (z - dev_sRGBToSpectrumTable_Scale[zi]) / (dev_sRGBToSpectrumTable_Scale[zi + 1] - dev_sRGBToSpectrumTable_Scale[zi]);
 
     float c[3] = {0.0f, 0.0f, 0.0f};
-    int linear_index = int((((float(maxc)*64 + (float(zi)+dz))*64 + (float(yi)+dy))*64 + (float(xi)+dx))*3);
-    for (int i = 0; i < 3; ++i, ++linear_index) {
+
+
+    //int linear_index = int((((float(maxc)*3 + (float(zi)+dz))*64 + (float(yi)+dy))*64 + (float(xi)+dx))*64);
+    for (int i = 0; i < 3; ++i) {
+        int linear_index = (((maxc*64 + (zi+int(dz)))*64 + (yi+int(dy)))*64 + (xi+int(dx))) * 3 + i;
         auto co = [&](int dx, int dy, int dz) {
             return dev_sRGBToSpectrumTable_Data[linear_index];
         };
@@ -210,6 +213,7 @@ inline void dev_srgb_to_spectrum(color srgb_color, float *sampled_spectrum, floa
         float x = polynomial(lambda, coeffs.z(), coeffs.y(), coeffs.x());
         float sigmoid_x = sigmoid_inf_check(x);
         sampled_spectrum[i] = sigmoid_x;
+
         lambda += step;
 
     }
