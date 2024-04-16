@@ -1,7 +1,11 @@
 #ifndef RTWEEKEND_CUDA_CUDA_UTILITY_CUH
 #define RTWEEKEND_CUDA_CUDA_UTILITY_CUH
 
+//IntelliSense hack
+#ifndef __CUDACC__
 #include <device_launch_parameters.h>
+#endif
+
 #include <curand_kernel.h>
 #include <iostream>
 #include <string>
