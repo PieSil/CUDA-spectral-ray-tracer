@@ -14,9 +14,8 @@ void create_bvh_kernel(hittable **d_world, size_t world_size, bvh **d_bvh, bool 
     curand_init(1984, 0, 0, rand_state);
 
     if (threadIdx.x == 0 && blockIdx.x == 0) {
-        auto new_bvh = new bvh(d_world, world_size, rand_state);
-        *d_bvh = new_bvh;
-        *success = new_bvh->is_valid();
+        *d_bvh = new bvh(d_world, world_size, rand_state);
+        *success = (*d_bvh)->is_valid();
     }
 }
 
@@ -60,8 +59,8 @@ void create_world_kernel(uint world_selector, hittable **d_list, material **d_ma
     }
 }
 
-__global__ void free_world_kernel(hittable **d_list, bvh **dev_bvh, material **d_mat_list, int world_size,
-                                  int n_materials) {
+__global__ void
+free_world_kernel(hittable **d_list, material **d_mat_list, int world_size, int n_materials, bvh **dev_bvh) {
 
     if (d_list != nullptr && threadIdx.x == 0 && blockIdx.x == 0) {
 
@@ -74,7 +73,6 @@ __global__ void free_world_kernel(hittable **d_list, bvh **dev_bvh, material **d
         }
 
         delete *dev_bvh;
-
     }
 }
 
@@ -172,13 +170,16 @@ void scene::device_quad_world(hittable **d_list, material **d_mat_list) {
 __device__
 void scene::device_simple_light(hittable **d_list, material **d_mat_list) {
 
-//    d_mat_list[0] = new material();
-//    *(d_mat_list[0]) = material::lambertian(color(0.0f, 1.0f, 0.0f));
-//
-//    d_mat_list[1] = new material();
+    d_mat_list[0] = new material();
+    *(d_mat_list[0]) = material::lambertian(color(.0f, 1.0f, .0f));
+
+    d_mat_list[1] = new material();
     //*(d_mat_list[1]) = material::metallic(color(.5f, .5f, .5f), .5f);
     //*(d_mat_list[1]) = material::dielectric(1.5f);
-//    *(d_mat_list[1]) = material::lambertian(color(1.0f, 0.0f, 0.0f));
+    *(d_mat_list[1]) = material::lambertian(color(.1f, .5f, .7f));
+
+    d_list[0] = new sphere(point3(0, -1000, 0), 1000, d_mat_list[0]);
+    d_list[1] = new sphere(point3(0, 2, 0), 2, d_mat_list[1]);
 }
 
 __device__
@@ -222,8 +223,8 @@ void scene::init_world_parameters(uint world_selector, int *world_size_ptr, int 
             break;
 
         case 2:
-            *world_size_ptr = 0;
-            *n_materials_ptr = 0;
+            *world_size_ptr = 2;
+            *n_materials_ptr = 2;
             break;
 
         case 3:
@@ -337,10 +338,11 @@ camera_builder scene::cornell_box_camera_builder() {
 __host__
 bool scene::create_bvh(hittable** d_world, size_t world_size, bvh** d_bvh) {
     bool h_success;
-    bool* d_success = nullptr;
+    bool* d_success;
 
     checkCudaErrors(cudaMalloc((void**)&d_success, sizeof(bool)));
     create_bvh_kernel<<<1, 1>>>(d_world, world_size, d_bvh, d_success);
+    checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaMemcpy(&h_success, d_success, sizeof(bool), cudaMemcpyDeviceToHost));
     checkCudaErrors(cudaFree(d_success));
     checkCudaErrors(cudaDeviceSynchronize());
@@ -357,7 +359,7 @@ void scene::create_world(hittable **d_list, material **d_mat_list, int *world_si
 __host__
 void scene::free_world(hittable **d_list, bvh **dev_bvh, material **d_mat_list, int world_size,
                 int n_materials) {
-    free_world_kernel<<<1, 1>>>(d_list, dev_bvh, d_mat_list, world_size, n_materials);
+    free_world_kernel<<<1, 1>>>(d_list, d_mat_list, world_size, n_materials, dev_bvh);
 
 }
 
@@ -407,6 +409,7 @@ const result scene_manager::init_world() {
         //build hittables and materials
         create_world(dev_world, dev_mat_list, dev_world_size_ptr, dev_n_materials_ptr, dev_ColorToSpectrum_Data);
 
+        checkCudaErrors(cudaGetLastError());
         //cleanup
         checkCudaErrors(cudaFree(dev_ColorToSpectrum_Data));
         checkCudaErrors(cudaMemcpy(h_world_size_ptr, dev_world_size_ptr, sizeof(int), cudaMemcpyDeviceToHost));
@@ -458,7 +461,6 @@ void scene_manager::init_camera() {
 __host__
 void scene_manager::destroy_world() {
     free_world(dev_world, dev_bvh, dev_mat_list, *h_world_size_ptr, *h_n_materials_ptr);
-    checkCudaErrors(cudaFree(dev_world));
     checkCudaErrors(cudaFree(dev_world));
     checkCudaErrors(cudaFree(dev_bvh));
     checkCudaErrors(cudaFree(dev_mat_list));
