@@ -35,13 +35,6 @@ public:
     __device__
     void compute_albedo_spectrum(float* dev_sRGBToSpectrum_Data) {
         dev_srgb_to_spectrum(albedo, spectral_reflectance_distribution, dev_sRGBToSpectrum_Data);
-//        printf("albedo: (%f, %f, %f)\nReflectance distribution:\n", albedo[0], albedo[1], albedo[2]);
-//        float lambda = LAMBDA_MIN;
-//        for(int i = 0; i < N_CIE_SAMPLES; i++) {
-//            printf("lambda: %f, value: %f\n", lambda, spectral_reflectance_distribution[i]);
-//            lambda += 5.0f;
-//        }
-//        printf("\n");
     }
 
     __device__
