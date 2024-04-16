@@ -1,14 +1,13 @@
-cmake_minimum_required(VERSION 3.24)
+﻿cmake_minimum_required(VERSION 3.20)
+enable_language(CUDA)
 
 project(spectral-rt-project CXX CUDA)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(INCLUDE_DIRS "CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES")
-include_directories(INCLUDE_DIRS)
 
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g -O0")
 set(CMAKE_CUDA_STANDARD 17)
 
-# set_target_properties(srgb_to_spectrum_pch PROPERTIES LINKER_LANGUAGE CXX)
 
 add_executable(spectral-rt-project
         main.cu
@@ -29,4 +28,10 @@ add_executable(spectral-rt-project
 set_target_properties(spectral-rt-project PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
         CUDA_ARCHITECTURES "50;75;80"
+        CUDA_RESOLVE_DEVICE_SYMBOLS ON
         CXX_PRECOMPILE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/srgb_to_spectrum.cuh)
+
+target_include_directories(spectral-rt-project PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+        ${CUDA_INCLUDE_DIRS})

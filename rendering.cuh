@@ -11,7 +11,7 @@
 #include "bvh.cuh"
 #include "io.cuh"
 #include "camera.cuh"
-#include "../materials/material.cuh"
+#include "materials/material.cuh"
 
 struct camera_data {
 
@@ -34,7 +34,7 @@ struct camera_data {
 class camera;
 
 __device__
-void ray_bounce(ray &r, const float *background_emittance_spectrum, bvh* bvh, uint bounce_limit, curandState *local_rand_state);
+void ray_bounce(ray &r, const float *background_emittance_spectrum, bvh** bvh, uint bounce_limit, curandState *local_rand_state);
 
 __device__
 ray get_ray(uint i, uint j, const point3 pixel00_loc, const vec3 pixel_delta_u, const vec3 pixel_delta_v,

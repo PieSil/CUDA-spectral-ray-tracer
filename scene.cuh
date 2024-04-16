@@ -27,7 +27,7 @@
 #include "bvh.cuh"
 #include "sphere.cuh"
 #include "camera_builder.cuh"
-#include "../materials/material.cuh"
+#include "materials/material.cuh"
 
 namespace scene {
     __device__

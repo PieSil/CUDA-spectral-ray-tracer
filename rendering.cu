@@ -148,6 +148,7 @@ __global__
 void
 spectral_render_kernel(vec3 *fb, bvh **bvh, camera_data cam_data, float *background_spectrum,
                        const uint samples_per_pixel, const uint bounce_limit, curandState *rand_state) {
+
     uint i = threadIdx.x + blockIdx.x * blockDim.x;
     uint j = threadIdx.y + blockIdx.y * blockDim.y;
 

@@ -82,16 +82,6 @@ public:
         return material(color(1.0f, 1.0, 1.0f), 1.0f, color(0.0f, 0.0f, 0.0f), ir, 0.0f, DIELECTRIC);
     }
 
-    __host__
-    const void to_device(material* dev_ptr) {
-        checkCudaErrors(cudaMemcpy(dev_ptr, this, sizeof(material), cudaMemcpyHostToDevice));
-    }
-
-    __host__
-    const void to_host(material* host_ptr) {
-        checkCudaErrors(cudaMemcpy(host_ptr, this, sizeof(material), cudaMemcpyDeviceToHost));
-    }
-
     __device__
     const bool scatter(ray &r_in, const hit_record &rec, curandState *local_rand_state) const;
 
