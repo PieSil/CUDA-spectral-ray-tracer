@@ -198,14 +198,14 @@ void scene::device_cornell_box(hittable **d_list, material **d_mat_list) {
     d_mat_list[2] = new material();
     *d_mat_list[2] = material::lambertian(color(.12, .45, .15));
     d_mat_list[3] = new material();
-    *d_mat_list[3] = material::emissive(color(15, 15, 15));
+    *d_mat_list[3] = material::emissive(color(1, 1, 1), 5);
 
-//    d_list[0] = new quad(point3(555, 0, 0), vec3(0, 555, 0), vec3 (0, 0, 555), d_mat_list[2]);
-//    d_list[1] = new quad(point3(0, 0, 0), vec3(0, 555, 0), vec3 (0, 0, 555), d_mat_list[0]);
-//    d_list[2] = new quad(point3(343, 554, 332), vec3(-130, 0, 0), vec3 (0, 0, -105), d_mat_list[3]);
-//    d_list[3] = new quad(point3(0, 0, 0), vec3(555, 0, 0), vec3 (0, 0, 555), d_mat_list[1]);
-//    d_list[4] = new quad(point3(555, 555, 555), vec3(-555, 0, 0), vec3 (0, 0, -555), d_mat_list[1]);
-//    d_list[5] = new quad(point3(0, 0, 555), vec3(555, 0, 0), vec3(0, 555, 0), d_mat_list[1]);
+    d_list[0] = new quad(point3(555, 0, 0), vec3(0, 555, 0), vec3 (0, 0, 555), d_mat_list[2]);
+    d_list[1] = new quad(point3(0, 0, 0), vec3(0, 555, 0), vec3 (0, 0, 555), d_mat_list[0]);
+    d_list[2] = new quad(point3(343, 554, 332), vec3(-130, 0, 0), vec3 (0, 0, -105), d_mat_list[3]);
+    d_list[3] = new quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[1]);
+    d_list[4] = new quad(point3(555, 555, 555), vec3(-555, 0, 0), vec3 (0, 0, -555), d_mat_list[1]);
+    d_list[5] = new quad(point3(0, 0, 555), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[1]);
 
 }
 
@@ -327,7 +327,7 @@ camera_builder scene::cornell_box_camera_builder() {
     vec3 vup = vec3(0,1,0);
     float defocus_angle = 0.0f;
     float focus_dist = 10.0f;
-    color background = color(0.0f, 0.0f, 0.0f);
+    color background = color(0.2f, 0.2f, 0.7f);
     //color background = color(0.70, 0.80, 1.00);
 
     return camera_builder().
