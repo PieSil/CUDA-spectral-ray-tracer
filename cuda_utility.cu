@@ -27,8 +27,15 @@ float cuda_random_float(curandState* local_rand_state) {
 __device__
 float cuda_random_float(float min, float max, curandState* local_rand_state) {
     // Returns a random real in (min,max].
+
+    /*
     float range_multiplier = max - min + 0.999999f;
     float result = range_multiplier*cuda_random_float(local_rand_state) + min;
+    */
+
+    float range_width = max - min;
+    float random = cuda_random_float(local_rand_state); // Generates random float between 0 and 1
+    float result = random * range_width + min; // Scale and shift to desired range (min, max]
 
     return result;
 }
