@@ -24,7 +24,7 @@ class material {
 public:
     __host__ __device__
     material() : albedo(1.0f, 1.0f, 1.0f), reflection_fuzz(1.0f), emitted(0.0f, 0.0f, 0.0f),
-                 material_type(MAT_TYPE::LAMBERTIAN), ir(1.0f),emission_power(1.0f) {
+                 material_type(MAT_TYPE::LAMBERTIAN), ir(1.0f),emission_power(0.0f) {
     }
 
     __device__
@@ -68,7 +68,7 @@ public:
 
     __device__
     static material metallic(const color albedo, const float fuzz) {
-        return material(albedo,  fuzz, color(0.0f, 0.0f, 0.0f), 1.0f, 0.0f, METALLIC);
+        return material(albedo, fuzz, color(0.0f, 0.0f, 0.0f), 1.0f, 0.0f, METALLIC);
     }
     __device__
     static material dielectric(const float ir) {
