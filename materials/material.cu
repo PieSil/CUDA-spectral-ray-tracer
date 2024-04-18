@@ -64,28 +64,23 @@ const bool material::scatter(ray &r_in, const hit_record &rec, curandState *loca
     //float random = cuda_random_float(local_rand_state);
     float lambda;
     float weight;
-//    reflection_scatter(mat.albedo, mat.reflection_fuzz, unit_in_direction, rec, reflection_direction,
-//                                              attenuation, local_rand_state);
-//
-//    lambertian_scatter(mat.albedo, rec, diffuse_direction, attenuation, local_rand_state);
-//    attenuation = attenuation * mat.albedo;
-//
-//    scatter_direction = mat.reflection_fuzz * diffuse_direction + (1-mat.reflection_fuzz) * reflection_direction;
 
     //TODO: UNIFY AS MUCH AS POSSIBLE
     switch(material_type) {
 
         case MAT_TYPE::METALLIC:
             //TODO: check if total light reflection needs to be performed
+            
+             
+            did_scatter = reflection_scatter(reflection_fuzz, unit_in_direction, rec, scatter_direction,
+                                            local_rand_state);
+
             for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
                 lambda = r_in.wavelengths[i];
-                weight = spectrum_interp(spectral_reflectance_distribution, lambda);
+                weight = did_scatter ? spectrum_interp(spectral_reflectance_distribution, lambda) : 0.0f;
                 r_in.power_distr[i] *= weight;
             }
-
-            did_scatter = reflection_scatter(reflection_fuzz, unit_in_direction, rec, scatter_direction,
-                                             local_rand_state);
-            break;
+        break;
 
         case MAT_TYPE::DIELECTRIC:
             did_scatter = refraction_scatter(ir, rec, scatter_origin, scatter_direction, unit_in_direction,
