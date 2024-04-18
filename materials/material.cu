@@ -27,7 +27,7 @@ const bool reflection_scatter(float mat_fuzz, vec3 unit_in_direction, const hit_
     /*
      * Sum a random vector centered on the reflected vector's endpoint scaled by the fuzz factor
      */
-    scattered_direction = reflected + mat_fuzz*random_unit_vector(local_rand_state);
+    scattered_direction = reflected + mat_fuzz * random_unit_vector(local_rand_state);
     //attenuation = (attenuation * weight);
 
     /*
@@ -63,9 +63,7 @@ const bool material::scatter(ray &r_in, const hit_record &rec, curandState *loca
     vec3 unit_in_direction = unit_vector(r_in.direction());
     //float random = cuda_random_float(local_rand_state);
     float lambda;
-    float cur_power;
     float weight;
-    float sum_pdf = 0.0f;
 //    reflection_scatter(mat.albedo, mat.reflection_fuzz, unit_in_direction, rec, reflection_direction,
 //                                              attenuation, local_rand_state);
 //
