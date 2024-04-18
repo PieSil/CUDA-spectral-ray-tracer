@@ -162,11 +162,13 @@ const bool material::scatter(ray &r_in, const hit_record &rec, curandState *loca
 
         if (cannot_refract || reflectance(cos_theta, refraction_ratio) > cuda_random_float(local_rand_state)) {
             scatter_direction = reflect(unit_in_direction, rec.normal);
-            //scatter_origin = rec.p + EPSILON*rec.normal;
+            // scatter_origin = rec.p + EPSILON * rec.normal;
         } else {
             scatter_direction = refract(unit_in_direction, rec.normal, refraction_ratio);
-            scatter_origin = rec.p - EPSILON*rec.normal;
+            //scatter_origin = rec.p - EPSILON * rec.normal;
         }
+
+        scatter_origin = rec.p + EPSILON * scatter_direction;
 
         return true;
     }
