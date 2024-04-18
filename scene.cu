@@ -402,13 +402,16 @@ const result scene_manager::init_world() {
         //copy constant to device global memory (cannot use constant memory since table is too big)
         float *dev_ColorToSpectrum_Data;
         checkCudaErrors(cudaMalloc((void **) &dev_ColorToSpectrum_Data, 3 * 64 * 64 * 64 * 3 * sizeof(float)));
+        if (dev_ColorToSpectrum_Data == nullptr) {
+            return { false, "Not enough memory on device for dev_ColorToSpectrum_Data\n" };
+        }
         checkCudaErrors(
                 cudaMemcpy(dev_ColorToSpectrum_Data, sRGBToSpectrumTable_Data, 3 * 64 * 64 * 64 * 3 * sizeof(float),
                            cudaMemcpyHostToDevice));
 
         //build hittables and materials
         create_world(dev_world, dev_mat_list, dev_world_size_ptr, dev_n_materials_ptr, dev_ColorToSpectrum_Data);
-
+        checkCudaErrors(cudaDeviceSynchronize());
         checkCudaErrors(cudaGetLastError());
         //cleanup
         checkCudaErrors(cudaFree(dev_ColorToSpectrum_Data));
