@@ -21,7 +21,7 @@
 #define N_SPHERES (N_RANDOM_SPHERES + N_NON_RANDOM_SPHERES)
 #define RANDOM_WORLD_SIZE N_SPHERES
 
-#define WORLD_SELECTOR 1
+#define WORLD_SELECTOR 2
 
 #include "cuda_utility.cuh"
 #include "bvh.cuh"

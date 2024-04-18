@@ -178,11 +178,15 @@ void scene::device_simple_light(hittable **d_list, material **d_mat_list) {
 
     d_mat_list[1] = new material();
     //*(d_mat_list[1]) = material::metallic(color(.5f, .5f, .5f), .5f);
-    *(d_mat_list[1]) = material::dielectric(1.5f);
-    //*(d_mat_list[1]) = material::lambertian(color(.1f, .5f, .7f));
+    //*(d_mat_list[1]) = material::dielectric(1.5f);
+    *(d_mat_list[1]) = material::lambertian(color(.1f, .5f, .7f));
+
+    d_mat_list[2] = new material();
+    *(d_mat_list[2]) = material::emissive(color(1.0f, 1.0f, 1.0f), 10.0f);
 
     d_list[0] = new sphere(point3(0, -1000, 0), 1000, d_mat_list[0]);
     d_list[1] = new sphere(point3(0, 2, 0), 2, d_mat_list[1]);
+    d_list[2] = new quad(point3(3, 1, -2), vec3(2, 0, 0), vec3(0, 2, 0), d_mat_list[2]);
 }
 
 __device__
@@ -226,8 +230,8 @@ void scene::init_world_parameters(uint world_selector, int *world_size_ptr, int 
             break;
 
         case 2:
-            *world_size_ptr = 2;
-            *n_materials_ptr = 2;
+            *world_size_ptr = 3;
+            *n_materials_ptr = 3;
             break;
 
         case 3:
@@ -297,10 +301,10 @@ camera_builder scene::simple_light_camera_builder() {
     float defocus_angle = 0.0f;
     float focus_dist = 10.0f;
     //color expanded_b_color = color(10.0f, 180.0f, 186.0f);
-    color expanded_b_color = color(255.0f, 255.0f, 255.0f);
-    color background = expanded_b_color/255;
+    //color expanded_b_color = color(255.0f, 255.0f, 255.0f);
+    //color background = expanded_b_color/255;
     //color background = color(0.5f, 0.5f, 0.5f);
-    //color background = color(0.0f, 0.0f, 0.0f);
+    color background = color(0.0f, 0.0f, 0.0f);
     //color background = color(1.00, 1.00, 1.00);
 
     return camera_builder().

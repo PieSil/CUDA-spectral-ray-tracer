@@ -95,6 +95,12 @@ const bool material::scatter(ray &r_in, const hit_record &rec, curandState *loca
                 new_wl = 0.0f;
             */
 
+            for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
+                lambda = r_in.wavelengths[i];
+                weight = spectrum_interp(spectral_emittance_distribution, lambda);
+                r_in.power_distr[i] *= weight;
+            }
+
             did_scatter = false;
             break;
 
