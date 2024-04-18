@@ -22,7 +22,8 @@ add_executable(spectral-rt-project
         bvh.cu
         rendering.cu
         camera.cu
-        scene.cu)
+        scene.cu
+        quad.cu)
 
 set_target_properties(spectral-rt-project PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON

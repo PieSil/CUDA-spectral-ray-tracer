@@ -163,11 +163,11 @@ void scene::device_quad_world(hittable **d_list, material **d_mat_list) {
     d_mat_list[4] = new material();
     *d_mat_list[4]= material::lambertian(color(0.2, 0.8, 0.8));
 
-//    d_list[0] = new quad(point3(-3,-2, 5), vec3(0, 0,-4), vec3(0, 4, 0), d_mat_list[0]);
-//    d_list[1] = new quad(point3(-2,-2, 0), vec3(4, 0,0), vec3(0, 4, 0), d_mat_list[1]);
-//    d_list[2] = new quad(point3(3,-2, 1), vec3(0, 0,4), vec3(0, 4, 0), d_mat_list[2]);
-//    d_list[3] = new quad(point3(-2,3, 1), vec3(4, 0, 0), vec3(0, 0, 4), d_mat_list[3]);
-//    d_list[4] = new quad(point3(-2,-3, 5), vec3(4, 0, 0), vec3(0, 0, -4), d_mat_list[4]);
+    d_list[0] = new quad(point3(-3,-2, 5), vec3(0, 0,-4), vec3(0, 4, 0), d_mat_list[0]);
+    d_list[1] = new quad(point3(-2,-2, 0), vec3(4, 0,0), vec3(0, 4, 0), d_mat_list[1]);
+    d_list[2] = new quad(point3(3,-2, 1), vec3(0, 0,4), vec3(0, 4, 0), d_mat_list[2]);
+    d_list[3] = new quad(point3(-2,3, 1), vec3(4, 0, 0), vec3(0, 0, 4), d_mat_list[3]);
+    d_list[4] = new quad(point3(-2,-3, 5), vec3(4, 0, 0), vec3(0, 0, -4), d_mat_list[4]);
 }
 
 __device__

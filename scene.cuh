@@ -21,11 +21,12 @@
 #define N_SPHERES (N_RANDOM_SPHERES + N_NON_RANDOM_SPHERES)
 #define RANDOM_WORLD_SIZE N_SPHERES
 
-#define WORLD_SELECTOR 0
+#define WORLD_SELECTOR 1
 
 #include "cuda_utility.cuh"
 #include "bvh.cuh"
 #include "sphere.cuh"
+#include "quad.cuh"
 #include "camera_builder.cuh"
 #include "materials/material.cuh"
 
