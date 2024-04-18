@@ -43,18 +43,20 @@ void create_world_kernel(uint world_selector, hittable **d_list, material **d_ma
                 device_cornell_box(d_list, d_mat_list);
                 break;
             default:
-                device_simple_light(d_list, d_mat_list);
-                //device_random_world(d_list, d_mat_list, world_size, n_materials);
+                //device_simple_light(d_list, d_mat_list);
+                device_random_world(d_list, d_mat_list, world_size, n_materials);
         }
 
         /*
          * precompute reflectance and emittance spectrum
          */
 
+        
         for(int i = 0; i < *n_materials; i++) {
             d_mat_list[i]->compute_albedo_spectrum(dev_sRGBToSpectrum_Data);
             d_mat_list[i]->compute_emittance_spectrum(dev_sRGBToSpectrum_Data);
         }
+        
 
     }
 }
@@ -96,19 +98,20 @@ void scene::device_random_world(hittable **d_list, material **d_mat_list, int *w
                     auto albedo = color::random(rand_state) * color::random(rand_state);
                     *(d_mat_list+list_idx) = new material();
                     **(d_mat_list+list_idx) = material::lambertian(albedo);
-                    *(d_list+list_idx) = new sphere(center, 0.2, *(d_mat_list+list_idx));
+                    *(d_list+list_idx) = new sphere(center, 0.2f, *(d_mat_list+list_idx));
                 } else if (choose_mat < 0.95f) {
                     // metal
-                    auto albedo = color::random(0.5, 1, rand_state);
-                    auto fuzz = cuda_random_float(0, 0.5, rand_state);
+                    //auto albedo = color::random(rand_state);
+                    auto albedo = color::random(0.5f, 1.0f, rand_state);
+                    auto fuzz = cuda_random_float(0.0f, 0.5f, rand_state);
                     *(d_mat_list+list_idx) = new material();
                     **(d_mat_list+list_idx) = material::metallic(albedo, fuzz);
-                    *(d_list+list_idx) = new sphere(center, 0.2, *(d_mat_list+list_idx));
+                    *(d_list+list_idx) = new sphere(center, 0.2f, *(d_mat_list+list_idx));
                 } else {
                     // glass
                     *(d_mat_list+list_idx) = new material();
                     **(d_mat_list+list_idx) = material::dielectric(1.5);
-                    *(d_list+list_idx) = new sphere(center, 0.2, *(d_mat_list+list_idx));
+                    *(d_list+list_idx) = new sphere(center, 0.2f, *(d_mat_list+list_idx));
                 }
 
                 /*if (*(d_list+list_idx) == nullptr)
@@ -175,8 +178,8 @@ void scene::device_simple_light(hittable **d_list, material **d_mat_list) {
 
     d_mat_list[1] = new material();
     //*(d_mat_list[1]) = material::metallic(color(.5f, .5f, .5f), .5f);
-    //*(d_mat_list[1]) = material::dielectric(1.5f);
-    *(d_mat_list[1]) = material::lambertian(color(.1f, .5f, .7f));
+    *(d_mat_list[1]) = material::dielectric(1.5f);
+    //*(d_mat_list[1]) = material::lambertian(color(.1f, .5f, .7f));
 
     d_list[0] = new sphere(point3(0, -1000, 0), 1000, d_mat_list[0]);
     d_list[1] = new sphere(point3(0, 2, 0), 2, d_mat_list[1]);
