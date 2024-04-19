@@ -26,7 +26,7 @@ public:
     float z() const { return e[2]; }
 
     __host__ __device__
-    vec3 operator-() const { return vec3(-e[0], e[1], e[2]); }
+    vec3 operator-() const { return vec3(-e[0], -e[1], -e[2]); }
 
     __host__ __device__
     float operator[](int i) const { return e[i]; }
