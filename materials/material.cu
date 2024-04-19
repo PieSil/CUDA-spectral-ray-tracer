@@ -40,7 +40,7 @@ const bool reflection_scatter(float mat_fuzz, vec3 unit_in_direction, const hit_
 __device__
 const float reflectance(float cosine, float ref_idx) {
     //Use Schlick's approximation for reflectance
-    auto r0 = (1.0f-ref_idx) / (1.0f+ref_idx); //reflectance of light when the incident ray
+    float r0 = (1.0f-ref_idx) / (1.0f+ref_idx); //reflectance of light when the incident ray
     // is perpendicular to the surface (i.e. cosine = 0)
 
     r0 = r0*r0; //part of Schlick's approximation, adjusts r0 in order to account
@@ -149,6 +149,7 @@ const bool material::scatter(ray &r_in, const hit_record &rec, curandState *loca
                        const vec3 unit_in_direction, curandState *local_rand_state)
 
     {
+        
         //attenuation = attenuation * color(1.0f, 1.0f, 1.0f); //no attenuation
         float refraction_ratio = rec.front_face ? (1.0f/mat_ir) : mat_ir;
 
@@ -171,10 +172,8 @@ const bool material::scatter(ray &r_in, const hit_record &rec, curandState *loca
             // scatter_origin = rec.p + EPSILON * rec.normal;
         } else {
             scatter_direction = refract(unit_in_direction, rec.normal, refraction_ratio);
-            //scatter_origin = rec.p - EPSILON * rec.normal;
+            scatter_origin = rec.p - EPSILON * rec.normal;
         }
-
-        scatter_origin = rec.p + EPSILON * scatter_direction;
 
         return true;
     }
