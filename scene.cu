@@ -39,9 +39,15 @@ void create_world_kernel(uint world_selector, hittable **d_list, material **d_ma
             case 2:
                 device_simple_light(d_list, d_mat_list);
                 break;
+
             case 3:
                 device_cornell_box(d_list, d_mat_list);
                 break;
+
+            case 4:
+                device_3_spheres(d_list, d_mat_list);
+                break;
+
             default:
                 //device_simple_light(d_list, d_mat_list);
                 device_random_world(d_list, d_mat_list, world_size, n_materials);
@@ -174,19 +180,24 @@ __device__
 void scene::device_simple_light(hittable **d_list, material **d_mat_list) {
 
     d_mat_list[0] = new material();
-    *(d_mat_list[0]) = material::lambertian(color(.0f, 1.0f, .0f));
+    *(d_mat_list[0]) = material::lambertian(color(.4f, 1.0f, .2f));
 
     d_mat_list[1] = new material();
     //*(d_mat_list[1]) = material::metallic(color(.5f, .5f, .5f), .5f);
-    //*(d_mat_list[1]) = material::dielectric(1.5f);
-    *(d_mat_list[1]) = material::lambertian(color(.1f, .5f, .7f));
+    //*(d_mat_list[1]) = material::lambertian(color(.1f, .5f, .7f));
+    *(d_mat_list[1]) = material::dielectric(1.5f);
+
+    d_mat_list[3] = new material();
+    *(d_mat_list[3]) = material::dielectric(1.0f/1.5f);
+    //*(d_mat_list[3]) = material::lambertian(color(1.0, 0.0f, 1.0f));
 
     d_mat_list[2] = new material();
-    *(d_mat_list[2]) = material::emissive(color(1.0f, 1.0f, 1.0f), 10.0f);
+    *(d_mat_list[2]) = material::emissive(color(1.0f, 1.0f, 1.0f), 5.0f);
 
-    d_list[0] = new sphere(point3(0, -1000, 0), 1000, d_mat_list[0]);
-    d_list[1] = new sphere(point3(0, 2, 0), 2, d_mat_list[1]);
-    d_list[2] = new quad(point3(3, 1, -2), vec3(2, 0, 0), vec3(0, 2, 0), d_mat_list[2]);
+    d_list[0] = new sphere(point3(0, -1000, 0), 1000, d_mat_list[0]); //ground
+    d_list[1] = new sphere(point3(0, 2, 0), 2, d_mat_list[1]); //sphere
+    d_list[3] = new sphere(point3(0, 2, 0), 1.9, d_mat_list[3]); //air bubble
+    d_list[2] = new quad(point3(3, 1, -2), vec3(2, 0, 0), vec3(0, 2, 0), d_mat_list[2]); //light
 }
 
 __device__
@@ -207,6 +218,28 @@ void scene::device_cornell_box(hittable **d_list, material **d_mat_list) {
     d_list[4] = new quad(point3(555, 555, 555), vec3(-555, 0, 0), vec3 (0, 0, -555), d_mat_list[1]);
     d_list[5] = new quad(point3(0, 0, 555), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[1]);
 
+}
+
+__device__
+void scene::device_3_spheres(hittable** d_list, material** d_mat_list) {
+    d_mat_list[0] = new material();
+    *d_mat_list[0] = material::lambertian(color(.8f, .7f, .0f)); //ground
+    d_mat_list[1] = new material();
+    *d_mat_list[1] = material::lambertian(color(.1f, .2f, .5f)); //center
+    d_mat_list[2] = new material();
+    //*d_mat_list[2] = material::lambertian(color(.8f, .8f, .8f)); //left
+    *d_mat_list[2] = material::dielectric(1.5f);
+    d_mat_list[3] = new material();
+    *d_mat_list[3] = material::lambertian(color(.8f, .6f, .2f)); //right
+
+    d_mat_list[4] = new material();
+    *d_mat_list[4] = material::dielectric(1.0f / 1.5f); //air
+
+    d_list[0] = new sphere(point3(0.0, -100.5, -1.0), 100.0, d_mat_list[0]); //ground
+    d_list[1] = new sphere(point3(0.0, 0.0, -1.2), 0.5, d_mat_list[1]); //center
+    d_list[2] = new sphere(point3(-1.0, 0.0, -1.0), 0.5, d_mat_list[2]); //left
+    d_list[3] = new sphere(point3(1.0, 0.0, -1.0), 0.5, d_mat_list[3]); //right
+    d_list[4] = new sphere(point3(-1.0, 0.0, -1.0), 0.4, d_mat_list[4]); //air
 }
 
 __host__
@@ -230,13 +263,18 @@ void scene::init_world_parameters(uint world_selector, int *world_size_ptr, int 
             break;
 
         case 2:
-            *world_size_ptr = 3;
-            *n_materials_ptr = 3;
+            *world_size_ptr = 4;
+            *n_materials_ptr = 4;
             break;
 
         case 3:
             *world_size_ptr = 6;
             *n_materials_ptr = 4;
+            break;
+
+        case 4:
+            *world_size_ptr = 5;
+            *n_materials_ptr = 5;
             break;
 
         default:
@@ -304,6 +342,7 @@ camera_builder scene::simple_light_camera_builder() {
     //color expanded_b_color = color(255.0f, 255.0f, 255.0f);
     //color background = expanded_b_color/255;
     //color background = color(0.5f, 0.5f, 0.5f);
+    //color background = color(0.7f, 0.7f, 1.0f);
     color background = color(0.0f, 0.0f, 0.0f);
     //color background = color(1.00, 1.00, 1.00);
 
@@ -322,12 +361,12 @@ camera_builder scene::simple_light_camera_builder() {
 __host__
 camera_builder scene::cornell_box_camera_builder() {
     float vfov = 40.0f;
-    point3 lookfrom = point3(278,278,-800);
-    point3 lookat = point3(278,278,0);
+    point3 lookfrom = point3(278, 278, -800);
+    point3 lookat = point3(278, 278, 0);
     vec3 vup = vec3(0,1,0);
     float defocus_angle = 0.0f;
     float focus_dist = 10.0f;
-    color background = color(0.2f, 0.2f, 0.7f);
+    color background = color(0.0f, 0.0f, 0.0f);
     //color background = color(0.70, 0.80, 1.00);
 
     return camera_builder().
@@ -340,6 +379,28 @@ camera_builder scene::cornell_box_camera_builder() {
             setDefocusAngle(defocus_angle).
             setFocusDist(focus_dist).
             setBackground(background);
+}
+
+__host__
+camera_builder scene::spheres_camera_builder() {
+    float vfov = 80.0f;
+    point3 lookfrom = point3(0, 0, 0);
+    point3 lookat = point3(0, 0, -1);
+    vec3 vup = vec3(0, 1, 0);
+    float defocus_angle = 0.0f;
+    float focus_dist = 10.0f;
+    color background = color(0.70, 0.80, 1.00);
+
+    return camera_builder().
+        setAspectRatio(16.0f/9.0f).
+        setImageWidth(400).
+        setVfov(vfov).
+        setLookfrom(lookfrom).
+        setVup(vup).
+        setLookat(lookat).
+        setDefocusAngle(defocus_angle).
+        setFocusDist(focus_dist).
+        setBackground(background);
 }
 
 __host__
@@ -458,6 +519,9 @@ void scene_manager::init_camera() {
             break;
         case 3:
             cam = cornell_box_camera_builder().getCamera();
+            break;
+        case 4:
+            cam = spheres_camera_builder().getCamera();
             break;
 
         default:
