@@ -14,13 +14,7 @@ inline void write_to_ppm(color* fb, int width, int height) {
     for (int j = 0; j < height; j++) {
         for (int i = 0; i < width; i++) {
             size_t pixel_index = j*width + i;
-
-            /*
-             * I don't know why values in the frame buffer get saved in an inverse order,
-             * to fix this I just read the fb ina bottom-up fashion
-             * if this comment is still here then I did not have enough time to identify the issue
-             */
-            color pixel_color = fb[(num_pixels-1) - pixel_index];
+            color pixel_color = fb[pixel_index];
             write_color(cout, pixel_color);
         }
     }
