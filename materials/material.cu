@@ -161,7 +161,7 @@ const bool material::scatter(ray &r_in, const hit_record &rec, curandState *loca
 
 
         /*
-         * We reflect the ray if Snell's law has no solution or if the reflectance index is greater than a random float
+         * We reflect the ray if Snell's law has no solution or if the reflectance index (computed by reflectance()) is greater than a random float
          * since cuda_random_float() generates values in [0.0, 1.0) with a uniform distribution we have that the greater
          * the reflectance index the more likely it will be to refract instead of reflect
          */
