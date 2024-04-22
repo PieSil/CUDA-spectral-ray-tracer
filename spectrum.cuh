@@ -6,7 +6,7 @@
 #define COLOR_CONVERSION_SPECTRUM_H
 
 #include "cie_const.cuh"
-#include "host_utility.cuh"
+#include "utility.cuh"
 #include "cuda_utility.cuh"
 
 __host__ __device__

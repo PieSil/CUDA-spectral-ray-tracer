@@ -2,10 +2,12 @@
 // Created by pietr on 31/03/2024.
 //
 
-#ifndef COLOR_CONVERSION_UTILS_H
-#define COLOR_CONVERSION_UTILS_H
+#ifndef COLOR_CONVERSION_UTILITY_H
+#define COLOR_CONVERSION_UTILITY_H
 
 #include "std_libs.cuh"
+
+#define PI 3.1415926535897932385f
 
 using namespace std;
 
@@ -16,13 +18,12 @@ typedef unsigned int uint;
 //Constants
 
 const float infinity = numeric_limits<float>::infinity();
-const float pi = 3.1415926535897932385f;
 
 //Utility Functions
 
-__host__
+__host__ __device__
 inline float degrees_to_radians(float degrees) {
-    return degrees * pi / 180.0f;
+    return degrees * PI / 180.0f;
 }
 
 __host__

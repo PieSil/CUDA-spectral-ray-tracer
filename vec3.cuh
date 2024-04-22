@@ -5,7 +5,7 @@
 #ifndef SPECTRAL_RAY_TRACING_VEC3_H
 #define SPECTRAL_RAY_TRACING_VEC3_H
 
-#include "host_utility.cuh"
+#include "utility.cuh"
 #include "cuda_utility.cuh"
 
 class vec3 {
