@@ -19,6 +19,13 @@ public:
     vec3(float e0, float e1, float e2) : e{e0, e1, e2} {}
 
     __host__ __device__
+    vec3(const vec3& v) {
+        e[0] = v.e[0];
+        e[1] = v.e[1];
+        e[2] = v.e[2];
+    }
+
+    __host__ __device__
     float x() const { return e[0]; }
     __host__ __device__
     float y() const { return e[1]; }
