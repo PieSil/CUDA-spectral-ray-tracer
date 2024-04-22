@@ -10,8 +10,14 @@
 
 class quad : public hittable {
 public:
+
     __device__
     quad(const point3& _Q, const vec3& _u, const vec3& _v, material* m) : Q(_Q), u(_u), v(_v), mat(m) {
+        init();
+    }
+
+    __host__ __device__
+    void init() {
         //plane implicit formula is Ax + By + Cz = D where:
         //(A, B, C) is the plane normal
         //D is a constant
@@ -21,12 +27,13 @@ public:
         auto n = cross(u, v);
         normal = unit_vector(n);
         D = dot(normal, Q); //solves D = Q_x*n_x + Q_y*n_y + Q_z*n_z in order to find D
-        w = n /dot(n,n);
+        w = n / dot(n, n);
 
         set_bounding_box();
     }
 
-    __device__
+
+    __host__ __device__
     virtual void set_bounding_box() {
         bbox = aabb(Q, Q+u+v).pad();
     }
@@ -37,7 +44,7 @@ public:
     }
 
     __device__
-        bool hit(const ray& r, float min, float max, hit_record& rec) const override;
+    bool hit(const ray& r, float min, float max, hit_record& rec) const override;
 
     __device__
     virtual bool is_interior(double a, double b, hit_record& rec) const {
