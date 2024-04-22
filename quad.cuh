@@ -59,7 +59,12 @@ public:
         return true;
     }
 
-private:
+    __host__ __device__
+    point3 center() {
+
+        return ((u + v) / 2.0f) + Q;;
+    }
+
     point3 Q; //origin point Q
     vec3 u, v; //vectors with origin in Q that define the "bottom left" corner of the quad
     material* mat;
