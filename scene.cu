@@ -203,21 +203,45 @@ void scene::device_simple_light(hittable **d_list, material **d_mat_list) {
 __device__
 void scene::device_cornell_box(hittable **d_list, material **d_mat_list) {
     d_mat_list[0] = new material();
-    *d_mat_list[0] = material::lambertian(color(.65, .05, .05));
+    *d_mat_list[0] = material::lambertian(color(.65, .05, .05)); //red
     d_mat_list[1] = new material();
-    *d_mat_list[1] = material::lambertian(color(.73, .73, .73));
+    *d_mat_list[1] = material::lambertian(color(.73, .73, .73)); //white
     d_mat_list[2] = new material();
-    *d_mat_list[2] = material::lambertian(color(.12, .45, .15));
+    *d_mat_list[2] = material::lambertian(color(.12, .45, .15)); //green
     d_mat_list[3] = new material();
-    *d_mat_list[3] = material::emissive(color(1, 1, 1), 5);
+    *d_mat_list[3] = material::emissive(color(1, 1, 1), 5); //light
+    d_mat_list[4] = new material();
+    *d_mat_list[4] = material::dielectric(1.5f); //glass
+    d_mat_list[5] = new material();
+    *d_mat_list[5] = material::dielectric(1.f/1.5f); //air
 
     d_list[0] = new quad(point3(555, 0, 0), vec3(0, 555, 0), vec3 (0, 0, 555), d_mat_list[2]);
     d_list[1] = new quad(point3(0, 0, 0), vec3(0, 555, 0), vec3 (0, 0, 555), d_mat_list[0]);
-    d_list[2] = new quad(point3(343, 554, 332), vec3(-130, 0, 0), vec3 (0, 0, -105), d_mat_list[3]);
+    d_list[2] = new quad(point3(343, 554, 332), vec3(-130, 0, 0), vec3 (0, 0, -105), d_mat_list[3]); //light
     d_list[3] = new quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[1]);
-    d_list[4] = new quad(point3(555, 555, 555), vec3(-555, 0, 0), vec3 (0, 0, -555), d_mat_list[1]);
-    d_list[5] = new quad(point3(0, 0, 555), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[1]);
+    d_list[4] = new quad(point3(555, 555, 555), vec3 (0, 0, -555), vec3(-555, 0, 0), d_mat_list[1]);
+    d_list[5] = new quad(point3(0, 0, 555), vec3(555, 0, 0), vec3(0, 555, 0), d_mat_list[1]);
 
+    quad** box_1_sides = reinterpret_cast<quad**>(&d_list[6]);
+    quad** box_2_sides = reinterpret_cast<quad**>(&d_list[12]);
+    quad** air_sides = reinterpret_cast<quad**>(&d_list[18]);
+
+    //TODO: fix this
+    
+    box box1 = box(point3(0.f, 0.f, 0.f), point3(165.f, 330.f, 165.f), d_mat_list[1], box_1_sides);
+    transform::rotate_box(box1, degrees_to_radians(15.f), transform::AXIS::Y, false);
+    transform::translate_box(box1, vec3(265.f, 0.f, 295.f));
+
+    box box2 = box(point3(0.f, 0.f, 0.f), point3(165.f, 165.f, 165.f), d_mat_list[4], box_2_sides);
+    transform::rotate_box(box2, degrees_to_radians(-18.f), transform::AXIS::Y, true);
+    transform::translate_box(box2, vec3(130.f, 0.f, 65.f));
+
+    //box air = box(min, max, new_dx, new_dy, new_dz, d_mat_list[0], air_sides);
+    box air = box(box2, d_mat_list[5], air_sides, 25.f);
+
+    //transform::rotate_box(air, degrees_to_radians(-18.f), transform::AXIS::Y, false);
+    //transform::translate_box(air, vec3(130.f, 0.f, 65.f));
+   
 }
 
 __device__
@@ -263,16 +287,19 @@ void scene::init_world_parameters(uint world_selector, int *world_size_ptr, int 
             break;
 
         case 2:
+            //light
             *world_size_ptr = 4;
             *n_materials_ptr = 4;
             break;
 
         case 3:
-            *world_size_ptr = 6;
-            *n_materials_ptr = 4;
+            //cornell
+            *world_size_ptr = 6+6+6+6;
+            *n_materials_ptr = 4+2;
             break;
 
         case 4:
+            //spheres
             *world_size_ptr = 5;
             *n_materials_ptr = 5;
             break;

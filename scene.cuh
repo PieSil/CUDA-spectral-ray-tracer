@@ -21,7 +21,7 @@
 #define N_SPHERES (N_RANDOM_SPHERES + N_NON_RANDOM_SPHERES)
 #define RANDOM_WORLD_SIZE N_SPHERES
 
-#define WORLD_SELECTOR 2
+#define WORLD_SELECTOR 3
 
 #include "cuda_utility.cuh"
 #include "bvh.cuh"
@@ -29,6 +29,7 @@
 #include "quad.cuh"
 #include "camera_builder.cuh"
 #include "materials/material.cuh"
+#include "transform.cuh"
 
 namespace scene {
     __device__
