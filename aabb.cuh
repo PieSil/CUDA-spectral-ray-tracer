@@ -44,7 +44,7 @@ public:
         z = numeric_interval(fmin(a.e[2], b.e[2]), fmax(a.e[2], b.e[2]));
     }
 
-    __device__
+    __host__ __device__
     const numeric_interval& axis(int n) const {
         switch(n) {
             case 1:
@@ -59,7 +59,7 @@ public:
         }
     }
 
-    __device__
+    __host__ __device__
     aabb pad() const {
         // Return an AABB that has no side narrower than some delta, padding if necessary.
 
