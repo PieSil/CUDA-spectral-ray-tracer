@@ -38,13 +38,13 @@ namespace interval {
         return device_clamp(x, min, max);
     }
 
-    __device__
+    __host__ __device__
     inline numeric_interval expand(const float min, const float max, float delta) {
         auto padding = delta/2;
         return numeric_interval(min - padding, max + padding);
     }
 
-    __device__
+    __host__ __device__
     inline float size(float min, float max) {
         return max - min;
     }
