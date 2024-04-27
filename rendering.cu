@@ -296,6 +296,7 @@ void call_render_kernel(bvh **bvh, uint samples_per_pixel, const camera *cam, ui
                                                                  samples_per_pixel,
                                                                  bounce_limit,
                                                                  dev_rand_state);
+    std::clog << "Rendering... ";
 
 
     checkCudaErrors(cudaGetLastError());
@@ -306,7 +307,7 @@ void call_render_kernel(bvh **bvh, uint samples_per_pixel, const camera *cam, ui
 
     stop = clock();
     double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
-    std::clog << "took " << timer_seconds << " seconds.\n";
+    std::clog << "done, took " << timer_seconds << " seconds.\n";
 
     //free device memory
     checkCudaErrors(cudaDeviceSynchronize());
