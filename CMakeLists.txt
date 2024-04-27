@@ -24,7 +24,8 @@ add_executable(spectral-rt-project
         camera.cu
         scene.cu
         quad.cu
-        transform.cu)
+        transform.cu
+        sellmeier.cu)
 
 set_target_properties(spectral-rt-project PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
