@@ -116,7 +116,7 @@ void scene::device_random_world(hittable **d_list, material **d_mat_list, int *w
                 } else {
                     // glass
                     *(d_mat_list+list_idx) = new material();
-                    **(d_mat_list+list_idx) = material::dielectric(1.5);
+                    **(d_mat_list+list_idx) = material::dielectric_const(1.5f);
                     *(d_list+list_idx) = new sphere(center, 0.2f, *(d_mat_list+list_idx));
                 }
 
@@ -136,7 +136,7 @@ void scene::device_random_world(hittable **d_list, material **d_mat_list, int *w
     *(d_list+N_RANDOM_SPHERES-void_positions) = new sphere(point3(0,-1000,0), 1000, *(d_mat_list+N_RANDOM_MATERIALS-void_positions));
 
     *(d_mat_list+N_RANDOM_MATERIALS-void_positions+1) = new material();
-    **(d_mat_list+N_RANDOM_MATERIALS-void_positions+1) = material::dielectric(1.5f);
+    **(d_mat_list+N_RANDOM_MATERIALS-void_positions+1) = material::dielectric_const(1.5f);
     *(d_list+N_RANDOM_SPHERES-void_positions+1) = new sphere(point3(0, 1, 0), 1.0, *(d_mat_list+N_RANDOM_MATERIALS-void_positions+1));
 
     *(d_mat_list+N_RANDOM_MATERIALS-void_positions+2) = new material();
@@ -185,10 +185,10 @@ void scene::device_simple_light(hittable **d_list, material **d_mat_list) {
     d_mat_list[1] = new material();
     //*(d_mat_list[1]) = material::metallic(color(.5f, .5f, .5f), .5f);
     //*(d_mat_list[1]) = material::lambertian(color(.1f, .5f, .7f));
-    *(d_mat_list[1]) = material::dielectric(1.5f);
+    *(d_mat_list[1]) = material::dielectric_const(1.5f);
 
     d_mat_list[3] = new material();
-    *(d_mat_list[3]) = material::dielectric(1.0f/1.5f);
+    *(d_mat_list[3]) = material::dielectric_const(1.0f/1.5f);
     //*(d_mat_list[3]) = material::lambertian(color(1.0, 0.0f, 1.0f));
 
     d_mat_list[2] = new material();
@@ -211,9 +211,9 @@ void scene::device_cornell_box(hittable **d_list, material **d_mat_list) {
     d_mat_list[3] = new material();
     *d_mat_list[3] = material::emissive(color(1, 1, 1), 5); //light
     d_mat_list[4] = new material();
-    *d_mat_list[4] = material::dielectric(1.5f); //glass
+    *d_mat_list[4] = material::dielectric_const(1.5f); //glass
     d_mat_list[5] = new material();
-    *d_mat_list[5] = material::dielectric(1.f/1.5f); //air
+    *d_mat_list[5] = material::dielectric_const(1.f/1.5f); //air
 
     d_list[0] = new quad(point3(555, 0, 0), vec3(0, 555, 0), vec3 (0, 0, 555), d_mat_list[2]);
     d_list[1] = new quad(point3(0, 0, 0), vec3(0, 555, 0), vec3 (0, 0, 555), d_mat_list[0]);
@@ -252,12 +252,12 @@ void scene::device_3_spheres(hittable** d_list, material** d_mat_list) {
     *d_mat_list[1] = material::lambertian(color(.1f, .2f, .5f)); //center
     d_mat_list[2] = new material();
     //*d_mat_list[2] = material::lambertian(color(.8f, .8f, .8f)); //left
-    *d_mat_list[2] = material::dielectric(1.5f);
+    *d_mat_list[2] = material::dielectric_const(1.5f);
     d_mat_list[3] = new material();
     *d_mat_list[3] = material::lambertian(color(.8f, .6f, .2f)); //right
 
     d_mat_list[4] = new material();
-    *d_mat_list[4] = material::dielectric(1.0f / 1.5f); //air
+    *d_mat_list[4] = material::dielectric_const(1.0f / 1.5f); //air
 
     d_list[0] = new sphere(point3(0.0, -100.5, -1.0), 100.0, d_mat_list[0]); //ground
     d_list[1] = new sphere(point3(0.0, 0.0, -1.2), 0.5, d_mat_list[1]); //center

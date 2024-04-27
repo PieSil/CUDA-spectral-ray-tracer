@@ -83,8 +83,22 @@ const bool material::scatter(ray &r_in, const hit_record &rec, curandState *loca
         break;
 
         case MAT_TYPE::DIELECTRIC:
-            did_scatter = refraction_scatter(ir, rec, scatter_origin, scatter_direction, unit_in_direction,
-                                             local_rand_state);
+            float ir = sellmeier_index(sellmeier_B, sellmeier_C, r_in.wavelengths[0]);
+            did_scatter = refraction_scatter(ir, &r_in, rec, scatter_origin, scatter_direction, unit_in_direction,
+                local_rand_state);
+            break;
+
+        case MAT_TYPE::DIELECTRIC_CONST:
+            /* 
+             * Some notes regarding refraction_scatter args:
+             * 1) for DIELECTRIC_CONST material sellmeier_B[0] contains the refractive index.
+             * 2) passing "nullptr" as ray pointer avoids setting to 0 the power of the ray's "non-hero" wavelengths 
+             */
+
+
+            did_scatter = refraction_scatter(sellmeier_B[0], nullptr, rec, scatter_origin, scatter_direction, unit_in_direction,
+                local_rand_state);
+
         break;
 
         case MAT_TYPE::EMISSIVE:
@@ -145,7 +159,7 @@ const bool material::scatter(ray &r_in, const hit_record &rec, curandState *loca
 
     __device__
     const bool
-    refraction_scatter(const float mat_ir, const hit_record &rec, point3 &scatter_origin, vec3 &scatter_direction,
+    refraction_scatter(const float mat_ir, ray* r_in, const hit_record &rec, point3 &scatter_origin, vec3 &scatter_direction,
                        const vec3 unit_in_direction, curandState *local_rand_state)
 
     {
@@ -169,6 +183,10 @@ const bool material::scatter(ray &r_in, const hit_record &rec, curandState *loca
 
         if (cannot_refract || reflectance(cos_theta, refraction_ratio) > cuda_random_float(local_rand_state)) {
             scatter_direction = reflect(unit_in_direction, rec.normal);
+
+            if (r_in != nullptr) {
+                r_in->power_to_zero(1);
+            }
             // scatter_origin = rec.p + EPSILON * rec.normal;
         } else {
             scatter_direction = refract(unit_in_direction, rec.normal, refraction_ratio);

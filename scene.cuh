@@ -30,6 +30,7 @@
 #include "camera_builder.cuh"
 #include "materials/material.cuh"
 #include "transform.cuh"
+#include "sellmeier.cuh"
 
 namespace scene {
     __device__
