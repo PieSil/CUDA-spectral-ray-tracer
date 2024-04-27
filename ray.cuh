@@ -52,6 +52,15 @@
                 i = 1.0f;
             }
         }
+
+        __device__
+            void power_to_zero(int from, int to = N_RAY_WAVELENGTHS-1) {
+            if (from >= 0 && to < N_RAY_WAVELENGTHS && from <= to) {
+                for (int i = from; i <= to; i++) {
+                    power_distr[i] = 0.f;
+                }
+            }
+        }
     };
 
 
