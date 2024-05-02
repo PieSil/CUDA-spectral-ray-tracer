@@ -1,4 +1,4 @@
-### A CUDA Spectral ray tracer
+# A CUDA Spectral ray tracer
 
 ## Intro
 This is a project I'm currently developing for the "GPU Programming" course at the "Politecnico di Torino", it consists of a basic spectral ray tracer able to render some relatively contained hard-coded scenes.
