@@ -2,7 +2,7 @@
 
 ## Intro
 This is a project I'm currently developing for the "GPU Programming" course at the "Politecnico di Torino", it consists of a basic spectral ray tracer able to render some relatively contained hard-coded scenes.
-Since the aim of this project is mainly to practice CUDA language and GPU code optimization the physical aspects are secondary, and developing a physically correct behaviour is not a priority.
+Since the aim of this project is mainly to practice CUDA language and GPU code optimization the physics related aspects are secondary, and developing a physically correct behaviour is not a priority, it is also worth noting that my efforts are dedicated to the rendering algorithm, while the other components of this project (e.g. color conversion, scene building and definition) are merely needed for the rendering algorithm to work and, as I'm writing this, I have no plan to further optimize or smooth out these aspects.
 
 __Please note that this is still a work in progress, as such the code may appear particularly rough, unorganized and poorly documented, I also do not guarantee that at any given point in time during development this project will compile and/or run as expected.__
 
