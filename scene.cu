@@ -45,6 +45,10 @@ void create_world_kernel(uint world_selector, hittable **d_list, material **d_ma
                 break;
 
             case 4:
+                device_prism_test(d_list, d_mat_list);
+                break;
+
+            case 5:
                 device_3_spheres(d_list, d_mat_list);
                 break;
 
@@ -211,7 +215,8 @@ void scene::device_cornell_box(hittable **d_list, material **d_mat_list) {
     d_mat_list[3] = new material();
     *d_mat_list[3] = material::emissive(color(1, 1, 1), 5); //light
     d_mat_list[4] = new material();
-    *d_mat_list[4] = material::dielectric_const(1.5f); //glass
+    *d_mat_list[4] = material::dielectric(dev_BK7_b, dev_BK7_c); //glass
+    //*d_mat_list[4] = material::dielectric_const(1.5f); //glass
     d_mat_list[5] = new material();
     *d_mat_list[5] = material::dielectric_const(1.f/1.5f); //air
 
@@ -224,9 +229,7 @@ void scene::device_cornell_box(hittable **d_list, material **d_mat_list) {
 
     quad** box_1_sides = reinterpret_cast<quad**>(&d_list[6]);
     quad** box_2_sides = reinterpret_cast<quad**>(&d_list[12]);
-    quad** air_sides = reinterpret_cast<quad**>(&d_list[18]);
-
-    //TODO: fix this
+    //quad** air_sides = reinterpret_cast<quad**>(&d_list[18]);
     
     box box1 = box(point3(0.f, 0.f, 0.f), point3(165.f, 330.f, 165.f), d_mat_list[1], box_1_sides);
     transform::rotate_box(box1, degrees_to_radians(15.f), transform::AXIS::Y, false);
@@ -237,11 +240,60 @@ void scene::device_cornell_box(hittable **d_list, material **d_mat_list) {
     transform::translate_box(box2, vec3(130.f, 0.f, 65.f));
 
     //box air = box(min, max, new_dx, new_dy, new_dz, d_mat_list[0], air_sides);
-    box air = box(box2, d_mat_list[5], air_sides, 25.f);
+    //box air = box(box2, d_mat_list[5], air_sides, 25.f);
 
     //transform::rotate_box(air, degrees_to_radians(-18.f), transform::AXIS::Y, false);
     //transform::translate_box(air, vec3(130.f, 0.f, 65.f));
    
+}
+
+__device__
+void scene::device_prism_test(hittable** d_list, material** d_mat_list) {
+
+    d_mat_list[0] = new material();
+    *d_mat_list[0] = material::lambertian(color(.73, .73, .73)); //white
+    d_mat_list[1] = new material();
+    *d_mat_list[1] = material::emissive(color(1, 1, 1), 5); //light
+    d_mat_list[2] = new material();
+    *d_mat_list[2] = material::dielectric_const(1.5f); //glass
+    //*d_mat_list[2] = material::dielectric(dev_flint_glass_b, dev_flint_glass_c); //glass
+    //*d_mat_list[2] = material::dielectric(dev_BK7_b, dev_BK7_c); //glass
+
+    //walls
+    d_list[0] = new quad(point3(555, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[0]);
+    d_list[1] = new quad(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[0]);
+    d_list[2] = new quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[0]);
+    d_list[3] = new quad(point3(555, 555, 555), vec3(0, 0, -555), vec3(-555, 0, 0), d_mat_list[0]);
+    d_list[4] = new quad(point3(0, 0, 555), vec3(555, 0, 0), vec3(0, 555, 0), d_mat_list[0]);
+
+    //light
+    point3 center = vec3(555.f/ 2.f, 554.f, 555.f / 2.f);
+    //float width = 130.f;
+    float width = 130.f;
+    //float depth = 105.f;
+    float depth = 130.f;
+    float height = 150.f;
+    float margin = 1.5f;
+
+    point3 Q = point3((center.x() + width / 2.f), center.y(), (center.z() + depth/2.f));
+    d_list[5] = new quad(Q, vec3(-width, 0, 0), vec3(0, 0, -depth), d_mat_list[1]); //light
+    /*
+    d_list[6] = new quad(point3(Q.x()+margin, Q.y()+2.f, (Q.z()-margin) - (depth+2.f*margin)), vec3(0, -height, 0), vec3(-(width+2.f*margin), 0, 0), d_mat_list[0]); //back wall
+    d_list[7] = new quad(point3(Q.x()+margin, Q.y()+2.f, Q.z()-margin), vec3(-(width+2.f*margin), 0, 0), vec3(0, -height, 0), d_mat_list[0]); //front wall
+    d_list[8] = new quad(point3((Q.x()+margin) , Q.y(), Q.z()-margin), vec3(0.f, -height, 0), vec3(0.f, 0.f, -(depth + 2.f*margin)), d_mat_list[0]); //right wall
+    d_list[9] = new quad(point3(Q.x()+margin - (width + 2.f*margin), Q.y(), Q.z() - margin), vec3(0.f, 0.f, -(depth + 2.f * margin)), vec3(0.f, -100.f, 0), d_mat_list[0]); //left wall
+    */
+
+
+
+    quad** prism_sides = reinterpret_cast<quad**>(&d_list[6]);
+
+    box prism = box(point3(0.f, 0.f, 0.f), point3(165.f, 165.f, 165.f), d_mat_list[2], prism_sides);
+    transform::translate_box(prism, vec3(343.f-width-(165.f-width)/2.f, 553.f-(sqrt(2.0f)*165.f), 332.f - depth -(165.f-depth)/2.f), false);
+    transform::rotate_box(prism, degrees_to_radians(-45.f), transform::AXIS::Y, false);
+    transform::rotate_box(prism, degrees_to_radians(-90.f), transform::AXIS::X, false);
+    transform::translate_box(prism, vec3(-50.f, 0.f, 0.f), true);
+
 }
 
 __device__
@@ -294,11 +346,16 @@ void scene::init_world_parameters(uint world_selector, int *world_size_ptr, int 
 
         case 3:
             //cornell
-            *world_size_ptr = 6+6+6+6;
+            *world_size_ptr = 6+6+6;
             *n_materials_ptr = 4+2;
             break;
-
         case 4:
+            //prism test
+            *world_size_ptr = 5 + 1 + 6; //walls + light + +light walls + prism
+            *n_materials_ptr = 3; //white + emission + dielectric
+            break;
+
+        case 5:
             //spheres
             *world_size_ptr = 5;
             *n_materials_ptr = 5;
@@ -406,6 +463,29 @@ camera_builder scene::cornell_box_camera_builder() {
             setDefocusAngle(defocus_angle).
             setFocusDist(focus_dist).
             setBackground(background);
+}
+
+__host__
+camera_builder scene::prism_test_camera_builder() {
+    float vfov = 40.0f;
+    point3 lookfrom = point3(278, 278, -800);
+    point3 lookat = point3(278, 278, 0);
+    vec3 vup = vec3(0, 1, 0);
+    float defocus_angle = 0.0f;
+    float focus_dist = 10.0f;
+    color background = color(0.0f, 0.0f, 0.0f);
+    //color background = color(0.70, 0.80, 1.00);
+
+    return camera_builder().
+        setAspectRatio(1.0f).
+        setImageWidth(600).
+        setVfov(vfov).
+        setLookfrom(lookfrom).
+        setVup(vup).
+        setLookat(lookat).
+        setDefocusAngle(defocus_angle).
+        setFocusDist(focus_dist).
+        setBackground(background);
 }
 
 __host__
@@ -548,6 +628,9 @@ void scene_manager::init_camera() {
             cam = cornell_box_camera_builder().getCamera();
             break;
         case 4:
+            cam = prism_test_camera_builder().getCamera();
+            break;
+        case 5:
             cam = spheres_camera_builder().getCamera();
             break;
 

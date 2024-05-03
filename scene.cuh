@@ -21,7 +21,7 @@
 #define N_SPHERES (N_RANDOM_SPHERES + N_NON_RANDOM_SPHERES)
 #define RANDOM_WORLD_SIZE N_SPHERES
 
-#define WORLD_SELECTOR 3
+#define WORLD_SELECTOR 4
 
 #include "cuda_utility.cuh"
 #include "bvh.cuh"
@@ -46,6 +46,9 @@ namespace scene {
     void device_cornell_box(hittable **d_list, material **d_mat_list);
 
     __device__
+    void device_prism_test(hittable** d_list, material** d_mat_list);
+
+    __device__
     void device_3_spheres(hittable** d_list, material** d_mat_list);
 
     __host__
@@ -62,6 +65,9 @@ namespace scene {
 
     __host__
     camera_builder cornell_box_camera_builder();
+
+    __host__
+    camera_builder prism_test_camera_builder();
 
     __host__
     camera_builder spheres_camera_builder();
