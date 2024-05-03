@@ -9,7 +9,8 @@
  * @return The refractive index at the given wavelength.
  */
 __device__
-float sellmeier_index(const float b[3], const float c[3], const float lambda) {
+float sellmeier_index(const float b[3], const float c[3], float lambda) {
+	lambda *= 1e-3f; //convert to micrometers
 	float lambda_squared = lambda * lambda;
 
 	float index = 1.0f +
