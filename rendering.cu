@@ -10,7 +10,6 @@
 __device__
 void ray_bounce(ray &r, const float *background_emittance_spectrum, bvh** bvh, const uint bounce_limit, curandState *local_rand_state) {
 
-    //TODO: finish this
 
     hit_record rec;
     //ray cur_ray = r;
@@ -18,13 +17,7 @@ void ray_bounce(ray &r, const float *background_emittance_spectrum, bvh** bvh, c
     for (int n_bounces = 0; n_bounces < bounce_limit; n_bounces++) {
 
         if (!(*bvh)->hit(r, 0.0f, FLT_MAX, rec)) {
-            //float random = cuda_random_float(local_rand_state);
-
-            for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
-                float lambda = r.wavelengths[i];
-                float weight = spectrum_interp(background_emittance_spectrum, lambda);
-                r.power_distr[i] *= weight;
-            }
+            r.mul_spectrum(background_emittance_spectrum);
 
             return; //background * attenuation;
         }
@@ -37,12 +30,6 @@ void ray_bounce(ray &r, const float *background_emittance_spectrum, bvh** bvh, c
     for(int i = 0; i < N_RAY_WAVELENGTHS; i++) {
         r.power_distr[i] = 0.0f;
     }
-
-
-    //Max bounces reached, return black
-    //return attenuation;
-    //return color(0,0,0);
-    //return ambient_color + final_color;
 }
 
 __device__
