@@ -16,10 +16,12 @@
     public:
         vec3 orig;
         vec3 dir;
+        bool wavelengths_zeroed = false;
         float wavelengths[N_RAY_WAVELENGTHS] = {0.0f};
         float power_distr[N_RAY_WAVELENGTHS] = {0.0f};
 
         __device__ ray() {};
+
         __device__
         ray(const point3& origin, const vec3& direction, curandState* local_rand_state) : orig(origin), dir(direction) {
             init_spectrum(local_rand_state);
@@ -51,14 +53,41 @@
             for (float & i : power_distr) {
                 i = 1.0f;
             }
+            wavelengths_zeroed = false;
         }
 
         __device__
-            void power_to_zero(int from, int to = N_RAY_WAVELENGTHS-1) {
-            if (from >= 0 && to < N_RAY_WAVELENGTHS && from <= to) {
-                for (int i = from; i <= to; i++) {
-                    power_distr[i] = 0.f;
+        void non_hero_to_zero() {
+            for (int i = 1; i < N_RAY_WAVELENGTHS; i++) {
+                power_distr[i] = 0.f;
+            }
+            wavelengths_zeroed = true;
+        }
+
+        __device__
+        void mul_spectrum(const float* spectral_distr) {
+            if (!wavelengths_zeroed) {
+                float lambda;
+                float weight;
+                for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
+                    lambda = wavelengths[i];
+                    weight = spectrum_interp(spectral_distr, lambda);
+                    power_distr[i] *= weight;
                 }
+            }
+            else {
+                power_distr[0] *= spectrum_interp(spectral_distr, wavelengths[0]);
+            }
+        }
+
+        __device__
+        void mul_spectrum(float value) {
+            if (!wavelengths_zeroed) {
+                for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
+                    power_distr[i] *= value;
+                }
+            } else {
+                power_distr[0] *= value;
             }
         }
     };
