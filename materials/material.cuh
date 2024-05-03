@@ -125,8 +125,8 @@ public:
 
 
 __device__
-const bool refraction_scatter(float mat_ir, ray* r_in, const hit_record &rec, point3 &scatter_origin, vec3 &scatter_direction,
-                   vec3 unit_in_direction, curandState *local_rand_state);
+const bool refraction_scatter(float mat_ir, ray& r_in, const hit_record &rec, point3 &scatter_origin, vec3 &scatter_direction,
+                   vec3 unit_in_direction, curandState *local_rand_state, bool const_ir_flag = true);
 
 __device__
 const float reflectance(float cosine, float ref_idx);

@@ -75,17 +75,13 @@ const bool material::scatter(ray &r_in, const hit_record &rec, curandState *loca
             did_scatter = reflection_scatter(reflection_fuzz, unit_in_direction, rec, scatter_direction,
                                             local_rand_state);
 
-            for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
-                lambda = r_in.wavelengths[i];
-                weight = did_scatter ? spectrum_interp(spectral_reflectance_distribution, lambda) : 0.0f;
-                r_in.power_distr[i] *= weight;
-            }
+            did_scatter ? r_in.mul_spectrum(spectral_reflectance_distribution) : r_in.mul_spectrum(0.0f);
         break;
 
         case MAT_TYPE::DIELECTRIC:
             float ir = sellmeier_index(sellmeier_B, sellmeier_C, r_in.wavelengths[0]);
-            did_scatter = refraction_scatter(ir, &r_in, rec, scatter_origin, scatter_direction, unit_in_direction,
-                local_rand_state);
+            did_scatter = refraction_scatter(ir, r_in, rec, scatter_origin, scatter_direction, unit_in_direction,
+                local_rand_state, false);
             break;
 
         case MAT_TYPE::DIELECTRIC_CONST:
@@ -96,7 +92,7 @@ const bool material::scatter(ray &r_in, const hit_record &rec, curandState *loca
              */
 
 
-            did_scatter = refraction_scatter(sellmeier_B[0], nullptr, rec, scatter_origin, scatter_direction, unit_in_direction,
+            did_scatter = refraction_scatter(sellmeier_B[0], r_in, rec, scatter_origin, scatter_direction, unit_in_direction,
                 local_rand_state);
 
         break;
@@ -108,24 +104,14 @@ const bool material::scatter(ray &r_in, const hit_record &rec, curandState *loca
             if (random > weight)
                 new_wl = 0.0f;
             */
-
-            for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
-                lambda = r_in.wavelengths[i];
-                weight = spectrum_interp(spectral_emittance_distribution, lambda);
-                r_in.power_distr[i] *= weight;
-            }
+            r_in.mul_spectrum(spectral_emittance_distribution);
 
             did_scatter = false;
             break;
 
         case MAT_TYPE::LAMBERTIAN:
         default:
-
-            for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
-                lambda = r_in.wavelengths[i];
-                weight = spectrum_interp(spectral_reflectance_distribution, lambda);
-                r_in.power_distr[i] *= weight;
-            }
+            r_in.mul_spectrum(spectral_reflectance_distribution);
 
 //            for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
 //                r_in.wl_pdf[i] /= sum_pdf;
@@ -159,8 +145,8 @@ const bool material::scatter(ray &r_in, const hit_record &rec, curandState *loca
 
     __device__
     const bool
-    refraction_scatter(const float mat_ir, ray* r_in, const hit_record &rec, point3 &scatter_origin, vec3 &scatter_direction,
-                       const vec3 unit_in_direction, curandState *local_rand_state)
+    refraction_scatter(const float mat_ir, ray& r_in, const hit_record &rec, point3 &scatter_origin, vec3 &scatter_direction,
+                       const vec3 unit_in_direction, curandState *local_rand_state, bool const_ir_flag)
 
     {
         
@@ -184,12 +170,14 @@ const bool material::scatter(ray &r_in, const hit_record &rec, curandState *loca
         if (cannot_refract || reflectance(cos_theta, refraction_ratio) > cuda_random_float(local_rand_state)) {
             scatter_direction = reflect(unit_in_direction, rec.normal);
 
-            if (r_in != nullptr) {
-                r_in->power_to_zero(1);
-            }
             // scatter_origin = rec.p + EPSILON * rec.normal;
         } else {
             scatter_direction = refract(unit_in_direction, rec.normal, refraction_ratio);
+
+            if (!const_ir_flag) {
+                r_in.non_hero_to_zero();
+                //r_in.disable_non_hero();
+            }
             scatter_origin = rec.p - EPSILON * rec.normal;
         }
 
