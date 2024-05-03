@@ -8,6 +8,7 @@
 #include "cie_const.cuh"
 #include "color_const.cuh"
 #include "srgb_to_spectrum.cuh"
+#include "sellmeier.cuh"
 
 __host__
 inline void init_device_symbols() {
@@ -31,6 +32,17 @@ inline void init_device_symbols() {
      */
     checkCudaErrors(cudaMemcpyToSymbol(dev_sRGBToSpectrumTable_Scale, sRGBToSpectrumTable_Scale, 64*sizeof(float)));
     checkCudaErrors(cudaMemcpyToSymbol(dev_sRGBToSpectrumTable_Res, &sRGBToSpectrumTable_Res, sizeof(int)));
+
+    /* predefined sellmeier's equation coefficients */
+    checkCudaErrors(cudaMemcpyToSymbol(dev_BK7_b, BK7_b, 3 * sizeof(float)));
+    checkCudaErrors(cudaMemcpyToSymbol(dev_BK7_c, BK7_c, 3 * sizeof(float)));
+
+    checkCudaErrors(cudaMemcpyToSymbol(dev_fused_silica_b, fused_silica_b, 3 * sizeof(float)));
+    checkCudaErrors(cudaMemcpyToSymbol(dev_fused_silica_c, fused_silica_c, 3 * sizeof(float)));
+
+    checkCudaErrors(cudaMemcpyToSymbol(dev_flint_glass_b, flint_glass_b, 3 * sizeof(float)));
+    checkCudaErrors(cudaMemcpyToSymbol(dev_flint_glass_c, flint_glass_c, 3 * sizeof(float)));
+
 }
 
 #endif //SPECTRAL_RT_PROJECT_DEVICE_INIT_CUH
