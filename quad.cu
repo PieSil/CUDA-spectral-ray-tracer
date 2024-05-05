@@ -4,13 +4,12 @@
 
 #include "quad.cuh"
 
-bool quad::hit(const ray& r, float min, float max, hit_record& rec) const
-{
+bool quad::hit(const ray& r, float min, float max, hit_record& rec) const {
 
     float denom = dot(normal, r.direction());
 
     //No hit if the ray is parallel to the plane
-    if (fabs(denom) < 1e-8) {
+    if (fabs(denom) < 1e-8f) {
         return false;
     }
 
