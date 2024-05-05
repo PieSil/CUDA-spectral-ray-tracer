@@ -25,7 +25,7 @@ bool quad::hit(const ray& r, float min, float max, hit_record& rec) const {
      * (https://raytracing.github.io/books/RayTracingTheNextWeek.html):
      */
 
-    auto intersection = r.at(t);
+    point3 intersection = r.at(t);
     auto planar_hitpt_vector = intersection - Q; //vector from Q to hit point
 
     //A point on the plane P can be defined by P = Q + alpha*u + beta*v
