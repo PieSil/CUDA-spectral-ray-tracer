@@ -45,6 +45,17 @@ public:
     }
 
     __host__ __device__
+        aabb(const point3& v1, const point3& v2, const point3& v3) {
+        /*
+         * Build a bbox containig a triangle
+         */
+
+        x = numeric_interval(fmin(v1[0], fmin(v2.e[0], v3.e[0])), fmax(v1.e[0], fmax(v2.e[0], v3.e[0])));
+        y = numeric_interval(fmin(v1[1], fmin(v2.e[1], v3.e[1])), fmax(v1.e[1], fmax(v2.e[1], v3.e[1])));
+        z = numeric_interval(fmin(v1[2], fmin(v2.e[2], v3.e[2])), fmax(v1.e[2], fmax(v2.e[2], v3.e[2])));
+    }
+
+    __host__ __device__
     const numeric_interval& axis(int n) const {
         switch(n) {
             case 1:
