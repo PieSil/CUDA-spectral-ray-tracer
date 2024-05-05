@@ -3,10 +3,9 @@ enable_language(CUDA)
 
 project(spectral-rt-project CXX CUDA)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 set(CMAKE_CUDA_STANDARD 17)
 
+set(SUBDIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/materials")
 
 add_executable(spectral-rt-project
         main.cu
@@ -25,7 +24,8 @@ add_executable(spectral-rt-project
         scene.cu
         quad.cu
         transform.cu
-        sellmeier.cu)
+        sellmeier.cu
+        tri.cu)
 
 set_target_properties(spectral-rt-project PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
@@ -35,5 +35,6 @@ set_target_properties(spectral-rt-project PROPERTIES
 
 target_include_directories(spectral-rt-project PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${SUBDIRECTORIES}
         ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
         ${CUDA_INCLUDE_DIRS})
