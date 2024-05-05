@@ -47,7 +47,7 @@ public:
     bool hit(const ray& r, float min, float max, hit_record& rec) const override;
 
     __device__
-    virtual bool is_interior(double a, double b, hit_record& rec) const {
+    virtual bool is_interior(float a, float b) const {
         // Given the hit point in plane coordinates, return false if it is outside the
         // primitive, otherwise set the hit record UV coordinates and return true.
 
