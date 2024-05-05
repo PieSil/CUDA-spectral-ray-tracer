@@ -34,7 +34,7 @@ bool quad::hit(const ray& r, float min, float max, hit_record& rec) const
     auto alpha = dot(w, cross(planar_hitpt_vector, v));
     auto beta = dot(w, cross(u, planar_hitpt_vector));
 
-    if (!is_interior(alpha, beta, rec))
+    if (!is_interior(alpha, beta))
         return false;
 
     // Ray hits the 2D shape; set the rest of the hit record and return true.
