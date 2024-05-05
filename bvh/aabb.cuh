@@ -76,7 +76,7 @@ public:
 
         float delta = 0.0001f;
         numeric_interval new_x = (size(x.min, x.max) >= delta) ? x : expand(x.min, x.max, delta);
-        numeric_interval new_y = (size(x.min, x.max) >= delta) ? y : expand(y.min, y.max, delta);
+        numeric_interval new_y = (size(y.min, y.max) >= delta) ? y : expand(y.min, y.max, delta);
         numeric_interval new_z = (size(z.min, z.max) >= delta) ? z : expand(z.min, z.max, delta);
 
         return aabb(new_x, new_y, new_z);
