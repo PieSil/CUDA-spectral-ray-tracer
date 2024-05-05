@@ -51,6 +51,9 @@ void create_world_kernel(uint world_selector, hittable **d_list, material **d_ma
             case 5:
                 device_3_spheres(d_list, d_mat_list);
                 break;
+            case 6:
+                device_tri_world(d_list, d_mat_list);
+                break;
 
             default:
                 //device_simple_light(d_list, d_mat_list);
@@ -297,6 +300,28 @@ void scene::device_prism_test(hittable** d_list, material** d_mat_list) {
 }
 
 __device__
+void scene::device_tri_world(hittable** d_list, material** d_mat_list) {
+    d_mat_list[0] = new material();
+    *d_mat_list[0] = material::lambertian(color(.65f, .05f, .05f)); //red
+    d_mat_list[1] = new material();
+    *d_mat_list[1] = material::lambertian(color(.05f, .65f, .05f)); //green
+    d_mat_list[2] = new material();
+    *d_mat_list[2] = material::lambertian(color(.05f, .05f, .65f)); //blue
+    d_mat_list[3] = new material();
+    *d_mat_list[3] = material::lambertian(color(.75f, .75f, .75f)); //white
+
+    point3 v1 = point3(0.f, 0.f, 555.f);
+    point3 v2 = point3(555.f, 0.f, 555.f);
+    point3 v3 = point3(555.f/2.f, 555.f, 555.f);
+
+    d_list[0] = new tri(v1, v3, v2, d_mat_list[0]);
+    d_list[1] = new sphere(v1, 20.f, d_mat_list[0]);
+    d_list[2] = new sphere(v2, 20.f, d_mat_list[1]);
+    d_list[3] = new sphere(v3, 20.f, d_mat_list[2]);
+
+}
+
+__device__
 void scene::device_3_spheres(hittable** d_list, material** d_mat_list) {
     d_mat_list[0] = new material();
     *d_mat_list[0] = material::lambertian(color(.8f, .7f, .0f)); //ground
@@ -359,6 +384,12 @@ void scene::init_world_parameters(uint world_selector, int *world_size_ptr, int 
             //spheres
             *world_size_ptr = 5;
             *n_materials_ptr = 5;
+            break;
+
+        case 6:
+            //tris
+            *world_size_ptr = 1 + 3;
+            *n_materials_ptr = 1 + 3;
             break;
 
         default:
@@ -463,6 +494,28 @@ camera_builder scene::cornell_box_camera_builder() {
             setDefocusAngle(defocus_angle).
             setFocusDist(focus_dist).
             setBackground(background);
+}
+
+__host__
+camera_builder scene::tris_camera_builder() {
+    float vfov = 40.0f;
+    point3 lookfrom = point3(278, 278, -800);
+    point3 lookat = point3(278, 278, 0);
+    vec3 vup = vec3(0, 1, 0);
+    float defocus_angle = 0.0f;
+    float focus_dist = 10.0f;
+    color background = color(0.70, 0.80, 1.00);
+
+    return camera_builder().
+        setAspectRatio(1.0f).
+        setImageWidth(600).
+        setVfov(vfov).
+        setLookfrom(lookfrom).
+        setVup(vup).
+        setLookat(lookat).
+        setDefocusAngle(defocus_angle).
+        setFocusDist(focus_dist).
+        setBackground(background);
 }
 
 __host__
@@ -632,6 +685,9 @@ void scene_manager::init_camera() {
             break;
         case 5:
             cam = spheres_camera_builder().getCamera();
+            break;
+        case 6:
+            cam = tris_camera_builder().getCamera();
             break;
 
         default:

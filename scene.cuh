@@ -21,17 +21,17 @@
 #define N_SPHERES (N_RANDOM_SPHERES + N_NON_RANDOM_SPHERES)
 #define RANDOM_WORLD_SIZE N_SPHERES
 
-#define WORLD_SELECTOR 4
+#define WORLD_SELECTOR 6
 
 #include "cuda_utility.cuh"
 #include "bvh.cuh"
 #include "sphere.cuh"
 #include "quad.cuh"
 #include "camera_builder.cuh"
-#include "materials/material.cuh"
+#include "material.cuh"
 #include "transform.cuh"
 #include "sellmeier.cuh"
-
+#include "tri.cuh"
 namespace scene {
     __device__
     void device_random_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials);
@@ -47,6 +47,9 @@ namespace scene {
 
     __device__
     void device_prism_test(hittable** d_list, material** d_mat_list);
+
+    __device__
+    void device_tri_world(hittable** d_list, material** d_mat_list);
 
     __device__
     void device_3_spheres(hittable** d_list, material** d_mat_list);
@@ -68,6 +71,9 @@ namespace scene {
 
     __host__
     camera_builder prism_test_camera_builder();
+
+    __host__
+    camera_builder tris_camera_builder();
 
     __host__
     camera_builder spheres_camera_builder();
