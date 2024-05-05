@@ -79,6 +79,9 @@ public:
         else if (right != nullptr) {
             hit_volume = new hittable_bbox(right->bounding_box());
         }
+        else {
+            hit_volume = new hittable_bbox(this->bounding_box());
+        }
 
     }
 

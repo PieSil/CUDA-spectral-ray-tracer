@@ -174,7 +174,6 @@ __device__ bool bvh::build_bvh(hittable** src_objects, size_t list_size, curandS
             bool is_leaf = (current_span == 1);
 
             if (is_leaf) {
-
                 //create leaf node
                 node->is_leaf = true;
                 node->left = nullptr;
@@ -255,31 +254,43 @@ __device__ bool bvh::build_bvh(hittable** src_objects, size_t list_size, curandS
 }
 
 __device__ void bvh::build_nodes_bboxes() {
-    auto node_stack = new bvh_node*[size];
+    
     int bbox_created = 0;
-    int tos = -1;
     bvh_node* current_node = root;
 
-    do {
-        //traverse to leftmost inner node of subtree
-        while (!current_node->is_leaf) {
-            node_stack[++tos] = current_node;
-            current_node = current_node->left;
-        }
+    if (current_node->is_leaf) {
+        //only one node
+        bbox_created++;
+        current_node->create_bbox();
+    }
+    else {
+        int tos = -1;
+        auto node_stack = new bvh_node * [size];
 
-        //peek element on tos
-        bvh_node* top_node = node_stack[tos];
+        do {
+            //traverse to leftmost inner node of subtree
+            while (!current_node->is_leaf) {
+                node_stack[++tos] = current_node;
+                current_node = current_node->left;
+            }
 
-        if(top_node->right->is_leaf || top_node->right->hit_volume != nullptr) {
-            //compute bbox based on children
-            bbox_created++;
-            top_node->create_bbox();
-            tos--; //actual pop
-        } else {
-            current_node = top_node->right;
-        }
+            //peek element on tos
+            bvh_node* top_node = node_stack[tos];
 
-    } while (tos >= 0 || !current_node->is_leaf);
+            if (top_node->right->is_leaf || top_node->right->hit_volume != nullptr) {
+                //compute bbox based on children
+                bbox_created++;
+                top_node->create_bbox();
+                tos--; //actual pop
+            }
+            else {
+                current_node = top_node->right;
+            }
 
-    delete[] node_stack;
+        } while (tos >= 0 || !current_node->is_leaf);
+
+        delete[] node_stack;
+    }
+
+    
 }
