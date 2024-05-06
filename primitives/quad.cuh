@@ -62,7 +62,7 @@ public:
     __host__ __device__
     point3 center() {
 
-        return ((u + v) / 2.0f) + Q;;
+        return ((u + v) / 2.0f) + Q;
     }
 
     point3 Q; //origin point Q
