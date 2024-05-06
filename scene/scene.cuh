@@ -32,6 +32,8 @@
 #include "transform.cuh"
 #include "sellmeier.cuh"
 #include "tri.cuh"
+#include "tri_quad.cuh"
+
 namespace scene {
     __device__
     void device_random_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials);

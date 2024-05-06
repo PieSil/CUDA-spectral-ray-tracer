@@ -309,15 +309,38 @@ void scene::device_tri_world(hittable** d_list, material** d_mat_list) {
     *d_mat_list[2] = material::lambertian(color(.05f, .05f, .65f)); //blue
     d_mat_list[3] = new material();
     *d_mat_list[3] = material::lambertian(color(.75f, .75f, .75f)); //white
+    d_mat_list[4] = new material();
+    *d_mat_list[4] = material::emissive(color(1, 1, 1), 5); //light
 
-    point3 v1 = point3(0.f, 0.f, 555.f);
-    point3 v2 = point3(555.f, 0.f, 555.f);
-    point3 v3 = point3(555.f/2.f, 555.f, 555.f);
+    
+    tri** bottom_faces = reinterpret_cast<tri**>(&d_list[0]);
+    //tri** back_faces = reinterpret_cast<tri**>(&d_list[2]);
+    //tri** light_faces = reinterpret_cast<tri**>(&d_list[0]);
+    tri_quad bottom = tri_quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[0], bottom_faces);
+    //tri_quad back = tri_quad(point3(555, 555, 555), vec3(0, 0, -555), vec3(-555, 0, 0), d_mat_list[3], back_faces);
+    //tri_quad light = tri_quad(point3(343, 554, 332), vec3(-130, 0, 0), vec3(0, 0, -105), d_mat_list[4], light_faces);
+    
+    //d_list[0] = new tri(point3(0, 0, 0), vec3(0.f, 0, 555), vec3(555, 0, 0), d_mat_list[0], CreationMode::VECTORS);
+    //d_list[1] = new tri(point3(555, 0, 555), vec3(0, 0, -555), vec3(-555, 0, 0), d_mat_list[0], CreationMode::VECTORS);
+    //d_list[0] = new quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[0]);
 
-    d_list[0] = new tri(v1, v3, v2, d_mat_list[0]);
-    d_list[1] = new sphere(v1, 20.f, d_mat_list[0]);
-    d_list[2] = new sphere(v2, 20.f, d_mat_list[1]);
-    d_list[3] = new sphere(v3, 20.f, d_mat_list[2]);
+    
+    float height_shift = 0.f;
+
+    
+    point3 v1 = point3(0.f, 0.f + height_shift, 555.f);
+    point3 v2 = point3(555.f, 0.f + height_shift, 555.f);
+    point3 v3 = point3(555.f/2.f, 555.f + height_shift, 555.f);
+
+    d_list[2] = new tri(v1, v3, v2, d_mat_list[1]);
+
+    /*
+    d_list[3] = new sphere(v1, 20.f, d_mat_list[0]);
+    d_list[4] = new sphere(v2, 20.f, d_mat_list[1]);
+    d_list[5] = new sphere(v3, 20.f, d_mat_list[2]);
+    */
+    
+    
 
 }
 
@@ -388,8 +411,8 @@ void scene::init_world_parameters(uint world_selector, int *world_size_ptr, int 
 
         case 6:
             //tris
-            *world_size_ptr = 1 + 3;
-            *n_materials_ptr = 1 + 3;
+            *world_size_ptr = 3;
+            *n_materials_ptr = 5;
             break;
 
         default:
@@ -504,7 +527,7 @@ camera_builder scene::tris_camera_builder() {
     vec3 vup = vec3(0, 1, 0);
     float defocus_angle = 0.0f;
     float focus_dist = 10.0f;
-    color background = color(0.70, 0.80, 1.00);
+    color background = color(0.7, 0.7, 1.0);
 
     return camera_builder().
         setAspectRatio(1.0f).
@@ -549,7 +572,7 @@ camera_builder scene::spheres_camera_builder() {
     vec3 vup = vec3(0, 1, 0);
     float defocus_angle = 0.0f;
     float focus_dist = 10.0f;
-    color background = color(0.70, 0.80, 1.00);
+    color background = color(0.7, 0.8, 1.0);
 
     return camera_builder().
         setAspectRatio(16.0f/9.0f).
