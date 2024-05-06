@@ -103,7 +103,15 @@ bool bvh::hit(const ray &r, float min, float max, hit_record &rec) const {
 
     // Traverse nodes starting from the root.
     bvh_node* node = root;
-    do {
+
+    if (node->is_leaf) {
+        //only one element 
+        if (node->hit(r, min, closest_so_far, rec)) {
+            hit_anything = true;
+            closest_so_far = rec.t;
+        }
+    }
+    else do {
         bvh_node* child_l = node->left;
         bvh_node* child_r = node->right;
 
@@ -144,6 +152,7 @@ bool bvh::hit(const ray &r, float min, float max, hit_record &rec) const {
         }
 
     } while (node != nullptr);
+
     return hit_anything;
 }
 
@@ -257,13 +266,8 @@ __device__ void bvh::build_nodes_bboxes() {
     
     int bbox_created = 0;
     bvh_node* current_node = root;
-
-    if (current_node->is_leaf) {
-        //only one node
-        bbox_created++;
-        current_node->create_bbox();
-    }
-    else {
+    
+    if(!current_node->is_leaf) { //at least two elements
         int tos = -1;
         auto node_stack = new bvh_node * [size];
 
