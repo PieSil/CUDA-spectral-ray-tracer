@@ -19,7 +19,8 @@ enum MAT_TYPE {
     DIELECTRIC,
     DIELECTRIC_CONST,
     GENERIC,
-    EMISSIVE
+    EMISSIVE,
+    NORMAL_TEST
 };
 
 class material {
@@ -103,6 +104,11 @@ public:
     __device__
     static material dielectric_const(const float ir) {
         return material(color(1.0f, 1.0, 1.0f), 1.0f, color(0.0f, 0.0f, 0.0f), ir, 0.0f, DIELECTRIC_CONST);
+    }
+
+    __device__
+    static material normal_test(color albedo) {
+        return material(albedo, 1.0f, color(0.0f, 0.0f, 0.0f), 1.0f, 0.0f, NORMAL_TEST);
     }
 
     __device__
