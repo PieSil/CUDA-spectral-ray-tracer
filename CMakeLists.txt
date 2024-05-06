@@ -37,7 +37,8 @@ add_executable(spectral-rt-project
         primitives/quad.cu
         primitives/transform.cu
         refraction/sellmeier.cu
-        primitives/tri.cu)
+        primitives/tri.cu
+        primitives/tri_quad.cu)
 
 set_target_properties(spectral-rt-project PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
