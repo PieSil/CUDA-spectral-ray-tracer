@@ -26,6 +26,9 @@ namespace transform {
 
 	__host__ __device__
 	void rotate_box(box target, float theta, transform::AXIS ax, bool reinit=true, bool local = true);
+
+	__host__ __device__
+	void assign_rot_matrix(float theta, AXIS ax, float rot_matrix[9]);
 }
 
 #endif
