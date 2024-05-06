@@ -76,6 +76,45 @@ void tri::init() {
     set_bounding_box();
 }
 
+__device__
+tri* tri::translate(const vec3 dir, const bool reinit) {
+    v[0] += dir;
+    v[1] += dir;
+    v[2] += dir;
+
+    if (reinit)
+        init();
+
+    return this;
+}
+
+__device__
+tri* tri::rotate(float theta, transform::AXIS ax, bool reinit, bool local) {
+    float rot_matrix[9] = { 1.0f, 0.f, 0.f,
+                0.f, 1.0f, 0.f,
+                0.f, 0.f, 1.f };
+
+    transform::assign_rot_matrix(theta, ax, rot_matrix);
+    point3 center;
+
+    if (local) {
+        center = centroid();
+        translate(-center, false);
+    }
+
+    v[0] = vec3::matrix_mul(v[0], rot_matrix);
+    v[1] = vec3::matrix_mul(v[1], rot_matrix);
+    v[2] = vec3::matrix_mul(v[2], rot_matrix);
+
+    if (local)
+        translate(center, false);
+
+    if (reinit)
+        init();
+
+    return this;
+}
+
 const bool tri::is_interior_faster(const point3 p) const {
     float a1 = double_signed_area_2D(p, v[0], v[1]);
     float a2 = double_signed_area_2D(p, v[1], v[2]);

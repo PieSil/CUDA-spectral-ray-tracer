@@ -5,6 +5,7 @@
 
 #include "hittable.cuh"
 #include "materials/material.cuh"
+#include "transform.cuh"
 
 enum AAPlane {
     NONE,  //no special trait
@@ -22,7 +23,7 @@ class tri : public hittable {
 public:
 
     __device__ 
-    tri(const point3 v1, const point3 v2, const point3 v3, material* m, CreationMode mode = VERTICES) : mat(m) {
+    tri(const point3 v1, const point3 v2, const point3 v3, material* m, bool defer_init = false, CreationMode mode = VERTICES) : mat(m) {
         //aa_plane = AAPlane::NONE;
        
         v[0] = v1;
@@ -39,9 +40,12 @@ public:
             v[2] = v3;
         }
 
-        init();
+        if (!defer_init)
+            init();
     }
 
+    __device__
+    void init();
 
     __host__ __device__
     virtual void set_bounding_box() {
@@ -57,6 +61,12 @@ public:
     bool hit(const ray& r, float min, float max, hit_record& rec) const override;
 
     __device__
+    tri* translate(const vec3 dir, const bool reinit = true);
+
+    __device__
+    tri* rotate(const float theta, const transform::AXIS ax, const bool reinit = true, const bool local = true);
+
+    __device__
     point3 centroid() const {
 
         return (v[0] + v[1] + v[2]) / 3.f;
@@ -70,23 +80,21 @@ public:
     vec3 normal;
     float D;
 
-    private:
-        __device__
-            void init();
+private:
 
-        __device__
-        const bool is_interior_faster(const point3 p) const;
+    __device__
+    const bool is_interior_faster(const point3 p) const;
 
-        __device__
-        const bool is_interior(const point3 p) const;
+    __device__
+    const bool is_interior(const point3 p) const;
 
-        __device__
+    __device__
         float double_signed_area_2D(const point3 v1, const point3 v2, const point3 v3) const;
 
-        __device__ 
-        const bool init_clockwise() {
-            clockwise = double_signed_area_2D(v[0], v[1], v[2]) >= 0;
-        }
+    __device__ 
+    const bool init_clockwise() {
+        clockwise = double_signed_area_2D(v[0], v[1], v[2]) >= 0;
+    }
 };
 
 #endif
