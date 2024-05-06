@@ -8,6 +8,11 @@ class tri_quad {
 public:
 
 	__device__
+	tri_quad() {
+		halves = nullptr;
+	}
+
+	__device__
 	tri_quad(const point3& Q, const vec3& u, const vec3& v, material* m, tri** _halves, bool defer_init = false) {
 
 		_halves[0] = new tri(Q, u, v, m, defer_init, CreationMode::VECTORS);
