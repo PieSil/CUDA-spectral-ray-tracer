@@ -1,7 +1,7 @@
 #include "prism.cuh"
 
 __device__
-prism prism::translate(const vec3 dir, const bool reinit) {
+prism prism::translate(vec3 dir, bool reinit) {
 	base[0]->translate(dir, reinit);
 	base[1]->translate(dir, reinit);
 
@@ -13,7 +13,7 @@ prism prism::translate(const vec3 dir, const bool reinit) {
 }
 
 __device__
-prism prism::rotate(const float theta, const transform::AXIS ax, const bool reinit, const bool local) {
+prism prism::rotate(float theta, transform::AXIS ax, bool reinit, bool local) {
 	point3 center;
 
 	if (local) {
