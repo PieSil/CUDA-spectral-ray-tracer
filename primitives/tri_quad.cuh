@@ -8,51 +8,56 @@ class tri_quad {
 public:
 
 	__device__
-	tri_quad() {
-		halves = nullptr;
-	}
+	tri_quad() {}
 
 	__device__
-	tri_quad(const point3& Q, const vec3& u, const vec3& v, material* m, tri** _halves, bool defer_init = false) {
+	tri_quad(const point3& Q, const vec3& u, const vec3& v, material* m, hittable** _halves, bool defer_init = false) {
 
 		_halves[0] = new tri(Q, u, v, m, defer_init, CreationMode::VECTORS);
 		_halves[1] = new tri(Q+u+v, -u, -v, m, defer_init, CreationMode::VECTORS);
-		halves = _halves;
+		halves[0] = _halves[0];
+		halves[1] = _halves[1];
 	}
 
 	__device__
 	void init() {
-		halves[0]->init();
-		halves[1]->init();
+		static_cast<tri*>(halves[0])->init();
+		static_cast<tri*>(halves[1])->init();
 	}
 
 	__device__
-	vec3 u() {
-		return halves[0]->v[1] - halves[0]->v[0];
+	const vec3 u() const {
+		return static_cast<tri*>(halves[0])->v[1] - static_cast<tri*>(halves[0])->v[0];
 	}
 
 	__device__
-	vec3 v() {
-		return halves[0]->v[2] - halves[0]->v[0];
+	const vec3 v() const {
+		return static_cast<tri*>(halves[0])->v[2] - static_cast<tri*>(halves[0])->v[0];
 	}
 
 	__device__
-	vec3 Q() {
-		return halves[0]->v[0];
+	const vec3 Q() const {
+		return static_cast<tri*>(halves[0])->v[0];
 	}
 
 	__device__
-	point3 center() {
+	const point3 center() const {
 		return (u() + v() / 2.0f) + Q();
 	}
 
 	__device__
-	tri_quad translate(const vec3 dir, const bool reinit = true);
+	void flip_normals() {
+		static_cast<tri*>(halves[0])->flip_normals();
+		static_cast<tri*>(halves[1])->flip_normals();
+	}
 
 	__device__
-	tri_quad rotate(const float theta, const transform::AXIS ax, const bool reinit = true, const bool local = true);
+	void translate(const vec3 dir, const bool reinit = true);
 
-	tri** halves; //the tris where the two faces of the quad are stored in
+	__device__
+	void rotate(const float theta, const transform::AXIS ax, const bool reinit = true, const bool local = true);
+
+	hittable* halves[2]; //the tris where the two faces of the quad are stored in
 };
 
 #endif 

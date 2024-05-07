@@ -35,6 +35,12 @@ bool tri::hit(const ray& r, float min, float max, hit_record& rec) const {
     rec.mat = mat;
     rec.set_face_normal(r, normal);
 
+    /*
+    if (debug) {
+        printf("hit!:\nrec.t: %f\nintersection: (%f, %f, %f)\nrec.normal: ()%f, %f, %f)\n\n", rec.t, rec.p[0], rec.p[1], rec.p[2], rec.normal[0], rec.normal[1], rec.normal[2]);
+    }
+    */
+
     return true;
 }
 
@@ -49,7 +55,7 @@ void tri::init() {
 
     vec3 n = cross(v[1] - v[0], v[2] - v[0]);
     normal = unit_vector(n);
-
+    //printf("normal: (%f, %f, %f)\n", normal[0], normal[1], normal[2]);
 
     bool perp_x = fabs(dot(normal, vec3(1.f, 0.f, 0.f))) < 1e-8f;
     bool perp_y = fabs(dot(normal, vec3(0.f, 1.f, 0.f))) < 1e-8f;
@@ -69,6 +75,7 @@ void tri::init() {
         //parallel to XY
         aa_plane = AAPlane::XY;
     }
+
     D = dot(normal, v[0]); //solves D = v1_x*n_x + v1_y*n_y + v1_z*n_z in order to find D, no need to flip the sign of D
 
     init_clockwise();
@@ -77,19 +84,17 @@ void tri::init() {
 }
 
 __device__
-tri* tri::translate(const vec3 dir, const bool reinit) {
+void tri::translate(const vec3 dir, const bool reinit) {
     v[0] += dir;
     v[1] += dir;
     v[2] += dir;
 
     if (reinit)
         init();
-
-    return this;
 }
 
 __device__
-tri* tri::rotate(float theta, transform::AXIS ax, bool reinit, bool local) {
+void tri::rotate(float theta, transform::AXIS ax, bool reinit, bool local) {
     float rot_matrix[9] = { 1.0f, 0.f, 0.f,
                 0.f, 1.0f, 0.f,
                 0.f, 0.f, 1.f };
@@ -111,8 +116,6 @@ tri* tri::rotate(float theta, transform::AXIS ax, bool reinit, bool local) {
 
     if (reinit)
         init();
-
-    return this;
 }
 
 const bool tri::is_interior_faster(const point3 p) const {

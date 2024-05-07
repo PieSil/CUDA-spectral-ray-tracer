@@ -22,6 +22,9 @@ enum CreationMode {
 class tri : public hittable {
 public:
 
+    __device__
+    tri() {}
+
     __device__ 
     tri(const point3 v1, const point3 v2, const point3 v3, material* m, bool defer_init = false, CreationMode mode = VERTICES) : mat(m) {
         //aa_plane = AAPlane::NONE;
@@ -50,6 +53,7 @@ public:
     __host__ __device__
     virtual void set_bounding_box() {
         bbox = aabb(v[0], v[1], v[2]).pad();
+        //bbox = aabb(v[0], v[0] + v[1] - v[0] + v[2] - v[0]).pad();
     }
 
     __host__ __device__
@@ -61,15 +65,24 @@ public:
     bool hit(const ray& r, float min, float max, hit_record& rec) const override;
 
     __device__
-    tri* translate(const vec3 dir, const bool reinit = true);
+    void translate(const vec3 dir, const bool reinit = true);
 
     __device__
-    tri* rotate(const float theta, const transform::AXIS ax, const bool reinit = true, const bool local = true);
+    void rotate(const float theta, const transform::AXIS ax, const bool reinit = true, const bool local = true);
 
     __device__
     point3 centroid() const {
 
         return (v[0] + v[1] + v[2]) / 3.f;
+    }
+
+    __device__
+    void flip_normals() {
+        auto tmp = v[1];
+        v[1] = v[2];
+        v[2] = tmp;
+
+        init();
     }
 
     point3 v[3];
@@ -78,6 +91,7 @@ public:
     material* mat;
     aabb bbox;
     vec3 normal;
+    //bool debug = false;
     float D;
 
 private:
