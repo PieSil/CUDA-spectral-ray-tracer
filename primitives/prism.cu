@@ -1,19 +1,17 @@
 #include "prism.cuh"
 
 __device__
-prism prism::translate(vec3 dir, bool reinit) {
-	base[0]->translate(dir, reinit);
-	base[1]->translate(dir, reinit);
+void prism::translate(vec3 dir, bool reinit) {
+	static_cast<tri*>(base[0])->translate(dir, reinit);
+	static_cast<tri*>(base[1])->translate(dir, reinit);
 
 	sides[0].translate(dir, reinit);
 	sides[1].translate(dir, reinit);
 	sides[2].translate(dir, reinit);
-
-	return *this;
 }
 
 __device__
-prism prism::rotate(float theta, transform::AXIS ax, bool reinit, bool local) {
+void prism::rotate(float theta, transform::AXIS ax, bool reinit, bool local) {
 	point3 center;
 
 	if (local) {
@@ -21,8 +19,8 @@ prism prism::rotate(float theta, transform::AXIS ax, bool reinit, bool local) {
 		translate(-center, false);
 	}
 
-	base[0]->rotate(theta, ax, false, false);
-	base[1]->rotate(theta, ax, false, false);
+	static_cast<tri*>(base[0])->rotate(theta, ax, false, false);
+	static_cast<tri*>(base[1])->rotate(theta, ax, false, false);
 
 	sides[0].rotate(theta, ax, false, false);
 	sides[1].rotate(theta, ax, false, false);
