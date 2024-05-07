@@ -47,7 +47,7 @@ public:
     __host__ __device__
         aabb(const point3& v1, const point3& v2, const point3& v3) {
         /*
-         * Build a bbox containig a triangle
+         * Build a bbox containing a triangle
          */
 
         x = numeric_interval(fmin(v1[0], fmin(v2.e[0], v3.e[0])), fmax(v1.e[0], fmax(v2.e[0], v3.e[0])));
@@ -80,6 +80,11 @@ public:
         numeric_interval new_z = (size(z.min, z.max) >= delta) ? z : expand(z.min, z.max, delta);
 
         return aabb(new_x, new_y, new_z);
+    }
+
+    __device__
+    point3 center() {
+        return (point3(x.max, y.max, z.max) - point3(x.min, y.min, z.min)) / 2.f;
     }
 
     __device__
