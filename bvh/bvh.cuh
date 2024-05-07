@@ -119,8 +119,6 @@ public:
         if (list_size > 0 && build_bvh(src_objects, list_size, local_rand_state)) {
             build_nodes_bboxes();
             valid = true;
-           /* size_t byte_size = sizeof(hittable*)*list_size + sizeof(hittable)*list_size + sizeof(bvh_node)*(list_size-1);
-            printf("At least %llu bytes\n", byte_size);*/
          } else {
             valid = false;
         }
@@ -165,8 +163,9 @@ public:
 
     __device__
     static bool box_compare(
-            const hittable* a, const hittable* b, int axis_index) {
-        return a->bounding_box().axis(axis_index).min < b->bounding_box().axis(axis_index).min;
+    const hittable* a, const hittable* b, int axis_index) {
+        return a->bounding_box().center()[axis_index] < b->bounding_box().center()[axis_index];
+            //return a->bounding_box().axis(axis_index).min < b->bounding_box().axis(axis_index).min;
     }
 
     __device__

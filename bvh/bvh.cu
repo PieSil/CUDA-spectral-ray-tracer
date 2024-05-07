@@ -110,8 +110,7 @@ bool bvh::hit(const ray &r, float min, float max, hit_record &rec) const {
             hit_anything = true;
             closest_so_far = rec.t;
         }
-    }
-    else do {
+    } else do {
         bvh_node* child_l = node->left;
         bvh_node* child_r = node->right;
 
@@ -190,9 +189,8 @@ __device__ bool bvh::build_bvh(hittable** src_objects, size_t list_size, curandS
                 node->hit_volume = src_objects[current.start];
             } else {
                 int axis = cuda_random_int(0, 2, local_rand_state);
-                auto comparator = (axis == 0) ? box_x_compare
-                                              : (axis == 1) ? box_y_compare
-                                                            : box_z_compare;
+                auto comparator = (axis == 0) ? box_x_compare: ((axis == 1) ? box_y_compare: box_z_compare);
+                //auto comparator = box_x_compare;
 
                 if (current_span == 2) {
                     //create left and right leaves
