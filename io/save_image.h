@@ -1,10 +1,10 @@
 #ifndef SPECTRAL_RT_PROJECT_SAVE_IMAGE_H
 #define SPECTRAL_RT_PROJECT_SAVE_IMAGE_H
 
-#include "CImg.h"
+#include "image.h"
 
 typedef unsigned int uint;
 
-void save_img(unsigned char* r, unsigned char* g, unsigned char* b, const uint width, const uint height, const char* filename);
+void save_img(uchar_img& image, const char* filename);
 
 #endif
