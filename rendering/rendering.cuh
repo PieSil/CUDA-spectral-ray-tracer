@@ -11,7 +11,8 @@
 #include "bvh.cuh"
 #include "io.cuh"
 #include "camera.cuh"
-#include "materials/material.cuh"
+#include "frame_buffer.cuh"
+#include "material.cuh"
 
 struct camera_data {
 
@@ -64,7 +65,7 @@ vec3 pixel_stratified_sample_square(uint sample_x, uint sample_y, float recip_sq
 __device__
 point3 defocus_disk_sample(vec3 camera_center, vec3 defocus_disk_u, vec3 defocus_disk_v, curandState* local_rand_state);
 
-void call_render_kernel(bvh **bvh, uint samples_per_pixel, const camera *cam, uint bounce_limit, dim3 blocks,
-                        dim3 threads);
+void call_render_kernel(frame_buffer* fb, bvh **bvh, uint samples_per_pixel, const camera *cam, uint bounce_limit,
+                        dim3 blocks, dim3 threads);
 
 #endif //SPECTRAL_RT_PROJECT_RENDERING_CUH

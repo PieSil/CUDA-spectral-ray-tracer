@@ -3,7 +3,9 @@ enable_language(CUDA)
 
 project(spectral-rt-project CXX CUDA)
 
-set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CUDA_STANDARD 20)
 
 set(SUBDIRECTORIES 
     "${CMAKE_CURRENT_SOURCE_DIR}/materials"
@@ -17,10 +19,11 @@ set(SUBDIRECTORIES
     "${CMAKE_CURRENT_SOURCE_DIR}/ray"
     "${CMAKE_CURRENT_SOURCE_DIR}/math"
     "${CMAKE_CURRENT_SOURCE_DIR}/io"
-    "${CMAKE_CURRENT_SOURCE_DIR}/scene")
+    "${CMAKE_CURRENT_SOURCE_DIR}/scene"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 add_executable(spectral-rt-project
-        main.cu
+        main.cpp
         utils/cie_const.cu
         spectrum/spectrum.cu
         utils/color_const.cu
@@ -40,7 +43,8 @@ add_executable(spectral-rt-project
         primitives/tri.cu
         primitives/tri_quad.cu
         primitives/prism.cu
-        primitives/tri_box.cu)
+        primitives/tri_box.cu
+        io/save_image.cpp)
 
 set_target_properties(spectral-rt-project PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON

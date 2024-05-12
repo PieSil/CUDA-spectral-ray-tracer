@@ -31,7 +31,7 @@ inline void init_device_symbols() {
      * NOTE: Data table is omitted since it's too big for constant memory
      */
     checkCudaErrors(cudaMemcpyToSymbol(dev_sRGBToSpectrumTable_Scale, sRGBToSpectrumTable_Scale, 64*sizeof(float)));
-    checkCudaErrors(cudaMemcpyToSymbol(dev_sRGBToSpectrumTable_Res, &sRGBToSpectrumTable_Res, sizeof(int)));
+    checkCudaErrors(cudaMemcpyToSymbol(&dev_sRGBToSpectrumTable_Res, &sRGBToSpectrumTable_Res, sizeof(int)));
 
     /* predefined sellmeier's equation coefficients */
     checkCudaErrors(cudaMemcpyToSymbol(dev_BK7_b, BK7_b, 3 * sizeof(float)));

@@ -4,7 +4,6 @@
 
 #include "rendering.cuh"
 
-
 //TODO: fix comments
 
 __device__
@@ -226,21 +225,21 @@ spectral_render_kernel(vec3 *fb, bvh **bvh, camera_data cam_data, float *backgro
 }
 
 __host__
-void call_render_kernel(bvh **bvh, uint samples_per_pixel, const camera *cam, uint bounce_limit, dim3 blocks,
-                        dim3 threads) {
+void call_render_kernel(frame_buffer* fb, bvh **bvh, uint samples_per_pixel, const camera *cam, uint bounce_limit,
+                        dim3 blocks, dim3 threads) {
 
     int image_width = cam->getImageWidth();
     int image_height = cam->getImageHeight();
 
     // Define Frame Buffer size
     uint num_pixels = cam->getNumPixels();
-    size_t fb_size = num_pixels*sizeof(vec3);
+    //size_t fb_size = num_pixels*sizeof(vec3);
 
     // Allocate Frame Buffer
     // TODO: use Unified Memory instead?
-    vec3* fb = new vec3[fb_size];
+    //vec3* fb = new vec3[fb_size];
     vec3* dev_fb = nullptr;
-    checkCudaErrors(cudaMalloc((void**) &dev_fb, fb_size));
+    checkCudaErrors(cudaMalloc((void**) &dev_fb, fb->byte_size()));
 
     curandState *dev_rand_state;
     checkCudaErrors(cudaMalloc((void**)&dev_rand_state, num_pixels*sizeof(curandState)));
@@ -290,7 +289,7 @@ void call_render_kernel(bvh **bvh, uint samples_per_pixel, const camera *cam, ui
     checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaFree(dev_rand_state));
 
-    checkCudaErrors(cudaMemcpy(fb, dev_fb, fb_size, cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(fb->data, dev_fb, fb->byte_size(), cudaMemcpyDeviceToHost));
 
     stop = clock();
     double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
@@ -302,8 +301,9 @@ void call_render_kernel(bvh **bvh, uint samples_per_pixel, const camera *cam, ui
     checkCudaErrors(cudaFree(dev_fb));
     checkCudaErrors(cudaFree(dev_background_spectrum));
 
-    write_to_ppm(fb, image_width, image_height);
+
+    //write_to_ppm(fb, image_width, image_height);
 
     //free host memory
-    free(fb);
+    //free(fb);
 };
