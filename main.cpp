@@ -2,8 +2,9 @@
 #include "scene.cuh"
 #include "device_init.cuh"
 #include "save_image.h"
+#include "image.h"
 
-#define SAMPLES_PER_PIXEL 500
+#define SAMPLES_PER_PIXEL 100
 #define BOUNCE_LIMIT 10
 
 using namespace scene;
@@ -18,10 +19,35 @@ int main() {
         uint width = sm.img_width();
         uint height = sm.img_height();
         frame_buffer fb(width * height);
-        sm.render(&fb, BOUNCE_LIMIT, SAMPLES_PER_PIXEL);
-        
         image_channels ch(fb);
-        save_img(ch.r, ch.g, ch.b, width, height, "test.bmp");
+        uchar_img image = get_image(ch.r, ch.g, ch.b, width, height);
+        img_display disp = get_image_display("Render");
+        disp.display(image);
+
+        sm.init_renderer(&fb, BOUNCE_LIMIT, SAMPLES_PER_PIXEL);
+        sm.init_device_params();
+
+        clock_t start, stop;
+        start = clock();
+
+        std::clog << "Rendering... ";
+        sm.render();
+
+        stop = clock();
+        double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
+        std::clog << "done, took " << timer_seconds << " seconds.\n";
+        
+        
+        ch = fb;
+        image = get_image(ch.r, ch.g, ch.b, width, height);
+        disp.render(image);
+        disp.paint();
+
+        
+        save_img(image, "test.bmp");
+        while (!disp.is_closed()) {
+            disp.wait();
+        }
         
 
         //write_to_ppm(fb.data, width, height);
