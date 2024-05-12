@@ -4,14 +4,6 @@
 
 #include "camera.cuh"
 
-__host__
-void
-camera::render(frame_buffer* fb, bvh **bvh, uint bounce_limit, uint samples_per_pixel, dim3 blocks, dim3 threads) const {
-
-    //Starts the render kernel on the GPU
-    call_render_kernel(fb, bvh, samples_per_pixel, this, bounce_limit, blocks, threads);
-}
-
 __host__ void camera::initialize() {
     /* Calculate the image height, and ensure that it's at least 1 */
     image_height = static_cast<int>(image_width / aspect_ratio);
@@ -63,14 +55,4 @@ __host__ void camera::initialize() {
     auto defocus_radius = focus_dist * tan(degrees_to_radians(defocus_angle / 2));
     defocus_disk_u = u * defocus_radius;
     defocus_disk_v = v * defocus_radius;
-}
-
-__host__ void
-camera::render(frame_buffer* fb, bvh **bvh, uint bounce_limit, uint samples_per_pixel) const {
-    uint tx = 8;
-    uint ty = 8;
-
-    dim3 blocks(image_width/tx+1, image_height/ty+1);
-    dim3 threads(tx, ty);
-    render(fb, bvh, bounce_limit, samples_per_pixel, blocks, threads);
 }

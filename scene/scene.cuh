@@ -33,6 +33,9 @@
 #include "sellmeier.cuh"
 #include "tri.cuh"
 #include "tri_quad.cuh"
+#include "prism.cuh"
+#include "tri_box.cuh"
+#include "rendering.cuh"
 
 namespace scene {
     __device__
@@ -84,8 +87,7 @@ namespace scene {
     bool create_bvh(hittable **d_world, size_t world_size, bvh **d_bvh);
 
     __host__
-    void create_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials,
-                      float *dev_sRGBToSpectrum_Data);
+    void create_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials, float* dev_sRGBToSpectrum_Data);
 
     __host__
     void free_world(hittable **d_list, bvh **dev_bvh, material **d_mat_list, int world_size,
@@ -114,14 +116,74 @@ namespace scene {
         int *h_n_materials_ptr = new int;
         int *h_world_size_ptr = new int;
 
-        void render(uint bounce_limit, uint samples_per_pixel) {
-            if (cam_inited && world_inited)
-                cam.render(dev_bvh, bounce_limit, samples_per_pixel);
+        void render() {
+            if (renderer_inited)
+                r.call_render_kernel();
+            else
+                cerr << "Renderer not yet initialized";
+        }
+
+        void init_renderer(frame_buffer* fb, uint bounce_limit, uint samples_per_pixel) {
+            if (cam_inited && world_inited) {
+                r = renderer(fb, dev_bvh, samples_per_pixel, &cam, bounce_limit);
+                renderer_inited = true;
+            }
+
+            else {
+                if (!cam_inited)
+                    cerr << "Camera not yet initialized" << endl;
+                if(!world_inited)
+                    cerr << "World not yet initialized" << endl;
+            }
+        }
+
+        void init_device_params(uint threads, uint blocks, uint chunk_width, uint chunk_height) {
+            if (renderer_inited) {
+                r.init_device_params(threads, blocks, chunk_width, chunk_height);
+            } else 
+                cerr << "Init renderer before assigning device parameters" << endl;
+        }
+
+        void init_device_params(uint chunk_width, uint chunk_height) {
+            if (renderer_inited) {
+                uint tx = 8;
+                uint ty = 8;
+
+                dim3 blocks(cam.getImageWidth() / tx + 1, cam.getImageHeight() / ty + 1);
+                dim3 threads(tx, ty);
+                r.init_device_params(threads, blocks, chunk_width, chunk_height);
+            }
+            else
+                cerr << "Init renderer before assigning device parameters" << endl;
+        }
+
+        void init_device_params() {
+            if (renderer_inited) {
+                uint width = cam.getImageWidth();
+                uint height = cam.getImageHeight();
+                uint tx = 8;
+                uint ty = 8;
+
+                dim3 blocks(width / tx + 1, height / ty + 1);
+                dim3 threads(tx, ty);
+                r.init_device_params(threads, blocks, width, height);
+            }
+            else
+                cerr << "Init renderer before assigning device parameters" << endl;
         }
 
         [[nodiscard]] result getResult() const {
             return world_result;
         }
+
+        const uint img_width() const {
+            return cam.getImageWidth();
+        }
+
+        const uint img_height() const {
+            return cam.getImageHeight();
+        }
+
 
     private:
         __host__
@@ -138,8 +200,10 @@ namespace scene {
         bvh **dev_bvh;
 
         camera cam;
-        bool cam_inited;
-        bool world_inited;
+        bool cam_inited = false;
+        bool world_inited = false;
+        renderer r;
+        bool renderer_inited = false;
 
         result world_result;
     };

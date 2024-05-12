@@ -7,7 +7,7 @@
 //TODO: fix comments
 
 __device__
-void ray_bounce(ray &r, const float *background_emittance_spectrum, bvh** bvh, const uint bounce_limit, curandState *local_rand_state) {
+void renderer::ray_bounce(ray &r, const float *background_emittance_spectrum, bvh** bvh, const uint bounce_limit, curandState *local_rand_state) {
 
 
     hit_record rec;
@@ -32,14 +32,14 @@ void ray_bounce(ray &r, const float *background_emittance_spectrum, bvh** bvh, c
 }
 
 __device__
-point3 defocus_disk_sample(vec3 camera_center, vec3 defocus_disk_u, vec3 defocus_disk_v, curandState* local_rand_state) {
+point3 renderer::defocus_disk_sample(vec3 camera_center, vec3 defocus_disk_u, vec3 defocus_disk_v, curandState* local_rand_state) {
     // Returns a random point in the camera defocus disk.
     auto p = random_in_unit_disk(local_rand_state);
     return camera_center + (p[0] * defocus_disk_u) + (p[1] * defocus_disk_v);
 }
 
 __device__
-vec3 pixel_sample_square(const vec3 pixel_delta_u, const vec3 pixel_delta_v, curandState* local_rand_state) {
+vec3 renderer::pixel_sample_square(const vec3 pixel_delta_u, const vec3 pixel_delta_v, curandState* local_rand_state) {
     // Returns a random point in the square surrounding a pixel at the origin.
 
     auto px = -0.5f + cuda_random_float(local_rand_state);
@@ -48,7 +48,7 @@ vec3 pixel_sample_square(const vec3 pixel_delta_u, const vec3 pixel_delta_v, cur
 };
 
 __device__
-vec3 pixel_stratified_sample_square(const uint sample_x, const uint sample_y, const float recip_sqrt_spp, const vec3 pixel_delta_u, const vec3 pixel_delta_v, curandState* local_rand_state) {
+vec3 renderer::pixel_stratified_sample_square(const uint sample_x, const uint sample_y, const float recip_sqrt_spp, const vec3 pixel_delta_u, const vec3 pixel_delta_v, curandState* local_rand_state) {
     // Returns a random point in the square surrounding a pixel at the origin.
     float px = -0.5f + recip_sqrt_spp * (float(sample_x) + cuda_random_float(local_rand_state));
     float py = -0.5f + recip_sqrt_spp * (float(sample_y) + cuda_random_float(local_rand_state));
@@ -56,7 +56,7 @@ vec3 pixel_stratified_sample_square(const uint sample_x, const uint sample_y, co
 };
 
 __device__
-ray get_ray(uint i, uint j, const point3 pixel00_loc, const vec3 pixel_delta_u, const vec3 pixel_delta_v,
+ray renderer::get_ray(uint i, uint j, const point3 pixel00_loc, const vec3 pixel_delta_u, const vec3 pixel_delta_v,
             const point3 camera_center, const vec3 defocus_disk_u, const vec3 defocus_disk_v, const float defocus_angle,
             curandState *local_rand_state) {
     /*
@@ -78,7 +78,7 @@ ray get_ray(uint i, uint j, const point3 pixel00_loc, const vec3 pixel_delta_u, 
 };
 
 __device__
-ray get_ray_stratified_sample(uint i, uint j,
+ray renderer::get_ray_stratified_sample(uint i, uint j,
                               const point3 pixel00_loc,
                               const vec3 pixel_delta_u,
                               const vec3 pixel_delta_v,
@@ -109,19 +109,21 @@ ray get_ray_stratified_sample(uint i, uint j,
 };
 
 __global__
-void render_init(int max_x, int max_y, curandState *rand_state) {
+void render_init(int max_x, int max_y, curandState* rand_state) {
     uint i = threadIdx.x + blockIdx.x * blockDim.x;
     uint j = threadIdx.y + blockIdx.y * blockDim.y;
 
+    
     if((i >= max_x) || (j >= max_y))
         return;
+    
 
     uint thread_index = j*max_x + i;
     //Each thread gets same seed, a different sequence number, no offset
     //curand_init(1984, pixel_index, 0, &rand_state[thread_index]);
 
     //Each thread gets different seed, same sequence number, no offset
-    curand_init(1999+thread_index, 0, 0, &rand_state[thread_index]);
+    curand_init(1984+thread_index, 0, 0, &rand_state[thread_index]);
 }
 
 __device__
@@ -132,7 +134,7 @@ void save_to_fb(color pixel_color, uint pixel_index, uint samples_per_pixel, vec
 
 __global__
 void
-spectral_render_kernel(vec3 *fb, bvh **bvh, camera_data cam_data, float *background_spectrum,
+spectral_render_kernel(vec3 *fb, bvh **bvh, uint width, uint height, camera_data cam_data, float *background_spectrum,
                        const uint samples_per_pixel, const uint bounce_limit, curandState *rand_state) {
 
     uint i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -140,10 +142,10 @@ spectral_render_kernel(vec3 *fb, bvh **bvh, camera_data cam_data, float *backgro
 
     extern __shared__ char array[];
 
-    if((i >= cam_data.width) || j >= cam_data.height)
+    if((i >= width) || j >= height)
         return;
 
-    uint pixel_index = j*cam_data.width + i;
+    uint pixel_index = j*width + i;
 
     //INITIALIZE SHARED MEMORY HERE IF NEEDED
     uint thread_in_block_idx = threadIdx.x*blockDim.y + threadIdx.y;
@@ -186,7 +188,7 @@ spectral_render_kernel(vec3 *fb, bvh **bvh, camera_data cam_data, float *backgro
         * trace the ray from camera center to current pixel sample
         * then sum the sample color obtained from the spectrum to current pixel
         */
-        ray r = get_ray(i, j, cam_data.pixel00_loc, cam_data.pixel_delta_u, cam_data.pixel_delta_v,
+        ray r = renderer::get_ray(i, j, cam_data.pixel00_loc, cam_data.pixel_delta_u, cam_data.pixel_delta_v,
                         cam_data.camera_center, cam_data.defocus_disk_u, cam_data.defocus_disk_v,
                         cam_data.defocus_angle, &local_rand_state);
 
@@ -200,7 +202,7 @@ spectral_render_kernel(vec3 *fb, bvh **bvh, camera_data cam_data, float *backgro
             printf("\n");
         }
         */
-        ray_bounce(r, sh_background_spectrum, bvh, bounce_limit, &local_rand_state);
+        renderer::ray_bounce(r, sh_background_spectrum, bvh, bounce_limit, &local_rand_state);
 
         /*
         if(threadIdx.x == 0 && threadIdx.y == 0 && blockIdx.x == 0 && blockIdx.y== 0) {
@@ -225,81 +227,49 @@ spectral_render_kernel(vec3 *fb, bvh **bvh, camera_data cam_data, float *backgro
 }
 
 __host__
-void call_render_kernel(frame_buffer* fb, bvh **bvh, uint samples_per_pixel, const camera *cam, uint bounce_limit,
-                        dim3 blocks, dim3 threads) {
+void renderer::assign_cam_data(camera* cam) {
+    cam_data = camera_data(cam->getImageWidth(), cam->getImageHeight(), cam->getPixelDeltaU(), cam->getPixelDeltaV(),
+        cam->getPixel00Loc(), cam->getDefocusAngle(), cam->getCenter(),
+        cam->getDefocusDiskU(), cam->getDefocusDiskV());
+}
 
-    int image_width = cam->getImageWidth();
-    int image_height = cam->getImageHeight();
+__host__
+void renderer::call_render_kernel() {
 
-    // Define Frame Buffer size
-    uint num_pixels = cam->getNumPixels();
-    //size_t fb_size = num_pixels*sizeof(vec3);
+    if (!device_inited) {
+        cerr << "Device parameters were not initialized, render aborted" << endl;
+        return;
+    }
 
-    // Allocate Frame Buffer
-    // TODO: use Unified Memory instead?
-    //vec3* fb = new vec3[fb_size];
-    vec3* dev_fb = nullptr;
-    checkCudaErrors(cudaMalloc((void**) &dev_fb, fb->byte_size()));
+    // clock_t start, stop;
+    //start = clock();
 
-    curandState *dev_rand_state;
-    checkCudaErrors(cudaMalloc((void**)&dev_rand_state, num_pixels*sizeof(curandState)));
-    checkCudaErrors(cudaGetLastError());
-    checkCudaErrors(cudaDeviceSynchronize());
-
-    float h_background_spectrum[N_CIE_SAMPLES];
-    float* dev_background_spectrum;
-    checkCudaErrors(cudaMalloc((void**)&dev_background_spectrum, N_CIE_SAMPLES*sizeof(float)));
-    srgb_to_illuminance_spectrum(cam->getBackground(), h_background_spectrum);
-    checkCudaErrors(cudaMemcpy(dev_background_spectrum, h_background_spectrum, N_CIE_SAMPLES * sizeof(float), cudaMemcpyHostToDevice));
-
-
-    render_init<<<blocks, threads>>>(cam->getImageWidth(), cam->getImageHeight(), dev_rand_state);
-
-//    PREPARE SHARED MEMORY SIZE HERE IF NEEDED
-//    uint* h_n_lights = new uint;
-//    uint* h_max_rays = new uint;
-//    checkCudaErrors(cudaMemcpy(h_n_lights, &(l_list->n_lights), sizeof(uint), cudaMemcpyDeviceToHost));
-//    checkCudaErrors(cudaMemcpy(h_max_rays, &(l_list->max_rays), sizeof(uint), cudaMemcpyDeviceToHost));
-//    int shadow_ray_iterations = int(min(*h_n_lights, *h_max_rays));
-//    free(h_n_lights);
-//    free(h_max_rays);
-
-//    unsigned shared_mem_size = (shadow_ray_iterations*sizeof(int)*threads.x*threads.y*threads.z);
-
-    unsigned shared_mem_size = (N_CIE_SAMPLES);
-
-    clock_t start, stop;
-    start = clock();
-
+    /*
     camera_data cam_data = camera_data(cam->getImageWidth(), cam->getImageHeight(), cam->getPixelDeltaU(), cam->getPixelDeltaV(),
                                        cam->getPixel00Loc(), cam->getDefocusAngle(), cam->getCenter(),
-                                       cam->getDefocusDiskU(), cam->getDefocusDiskV());
+                                       cam->getDefocusDiskU(), cam->getDefocusDiskV());*/
 
     spectral_render_kernel<<<blocks, threads, shared_mem_size>>>(dev_fb,
-                                                                 bvh,
+                                                                 dev_bvh,
+                                                                 chunk_width,
+                                                                 chunk_height,
                                                                  cam_data,
                                                                  dev_background_spectrum,
                                                                  samples_per_pixel,
                                                                  bounce_limit,
                                                                  dev_rand_state);
-    std::clog << "Rendering... ";
-
+    // std::clog << "Rendering... ";
 
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaFree(dev_rand_state));
-
-    checkCudaErrors(cudaMemcpy(fb->data, dev_fb, fb->byte_size(), cudaMemcpyDeviceToHost));
-
-    stop = clock();
-    double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
-    std::clog << "done, took " << timer_seconds << " seconds.\n";
-
-    //free device memory
+    clog << "Copying data" << endl;
+    checkCudaErrors(cudaMemcpy(h_fb_data_ptr, dev_fb, chunk_width*chunk_height*sizeof(vec3), cudaMemcpyDeviceToHost));
+    clog << "Data copied" << endl;
     checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaGetLastError());
-    checkCudaErrors(cudaFree(dev_fb));
-    checkCudaErrors(cudaFree(dev_background_spectrum));
+
+    // stop = clock();
+    // double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
+    // std::clog << "done, took " << timer_seconds << " seconds.\n";
 
 
     //write_to_ppm(fb, image_width, image_height);
@@ -307,3 +277,47 @@ void call_render_kernel(frame_buffer* fb, bvh **bvh, uint samples_per_pixel, con
     //free host memory
     //free(fb);
 };
+
+__host__
+void renderer::init_device_params(dim3 _threads, dim3 _blocks, uint _chunk_width, uint _chunk_height) {
+    // Allocate Frame Buffer
+    //vec3* dev_fb = nullptr;
+    threads = _threads;
+    blocks = _blocks;
+    chunk_width = _chunk_width;
+    chunk_height = _chunk_height;
+
+    //    PREPARE SHARED MEMORY SIZE HERE IF NEEDED
+        //    uint* h_n_lights = new uint;
+        //    uint* h_max_rays = new uint;
+        //    checkCudaErrors(cudaMemcpy(h_n_lights, &(l_list->n_lights), sizeof(uint), cudaMemcpyDeviceToHost));
+        //    checkCudaErrors(cudaMemcpy(h_max_rays, &(l_list->max_rays), sizeof(uint), cudaMemcpyDeviceToHost));
+        //    int shadow_ray_iterations = int(min(*h_n_lights, *h_max_rays));
+        //    free(h_n_lights);
+        //    free(h_max_rays);
+
+        //    unsigned shared_mem_size = (shadow_ray_iterations*sizeof(int)*threads.x*threads.y*threads.z);
+    shared_mem_size = (N_CIE_SAMPLES);
+
+    uint num_pixels = chunk_width * chunk_height;
+    checkCudaErrors(cudaMalloc((void**)&dev_fb, num_pixels * sizeof(vec3)));
+    checkCudaErrors(cudaGetLastError());
+
+    checkCudaErrors(cudaMalloc((void**)&dev_rand_state, num_pixels * sizeof(curandState)));
+    checkCudaErrors(cudaGetLastError());
+
+    float h_background_spectrum[N_CIE_SAMPLES];
+    checkCudaErrors(cudaMalloc((void**)&dev_background_spectrum, N_CIE_SAMPLES * sizeof(float)));
+    checkCudaErrors(cudaGetLastError());
+
+    srgb_to_illuminance_spectrum(background, h_background_spectrum);
+    checkCudaErrors(cudaMemcpy(dev_background_spectrum, h_background_spectrum, N_CIE_SAMPLES * sizeof(float), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+
+    render_init<<<blocks, threads>>>(chunk_width, chunk_height, dev_rand_state);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+
+    device_inited = true;
+}

@@ -20,8 +20,7 @@ void create_bvh_kernel(hittable **d_world, size_t world_size, bvh **d_bvh, bool 
 }
 
 __global__
-void create_world_kernel(uint world_selector, hittable **d_list, material **d_mat_list, int *world_size, int *n_materials,
-                    float* dev_sRGBToSpectrum_Data) {
+void create_world_kernel(uint world_selector, hittable **d_list, material **d_mat_list, int *world_size, int *n_materials, float* dev_sRGBToSpectrum_Data) {
 
     /*
      * initialize hittables and materials based on a world selector
@@ -51,6 +50,7 @@ void create_world_kernel(uint world_selector, hittable **d_list, material **d_ma
             case 5:
                 device_3_spheres(d_list, d_mat_list);
                 break;
+
             case 6:
                 device_tri_world(d_list, d_mat_list);
                 break;
@@ -65,10 +65,13 @@ void create_world_kernel(uint world_selector, hittable **d_list, material **d_ma
          */
 
         
+        
         for(int i = 0; i < *n_materials; i++) {
             d_mat_list[i]->compute_albedo_spectrum(dev_sRGBToSpectrum_Data);
             d_mat_list[i]->compute_emittance_spectrum(dev_sRGBToSpectrum_Data);
         }
+        
+        
         
 
     }
@@ -303,45 +306,52 @@ __device__
 void scene::device_tri_world(hittable** d_list, material** d_mat_list) {
     d_mat_list[0] = new material();
     *d_mat_list[0] = material::lambertian(color(.65f, .05f, .05f)); //red
+    //*d_mat_list[0] = material::normal_test(color(.65f, .05f, .05f)); //red
     d_mat_list[1] = new material();
+    //*d_mat_list[1] = material::lambertian(color(.05f, .65f, .05f)); //green
     *d_mat_list[1] = material::lambertian(color(.05f, .65f, .05f)); //green
     d_mat_list[2] = new material();
-    *d_mat_list[2] = material::lambertian(color(.05f, .05f, .65f)); //blue
+    //*d_mat_list[2] = material::lambertian(color(.05f, .05f, .65f)); //blue
+    //*d_mat_list[2] = material::dielectric_const(1.5f); //glass
+    *d_mat_list[2] = material::dielectric(dev_flint_glass_b, dev_flint_glass_c);
     d_mat_list[3] = new material();
+    //*d_mat_list[3] = material::lambertian(color(.75f, .75f, .75f)); //white
     *d_mat_list[3] = material::lambertian(color(.75f, .75f, .75f)); //white
     d_mat_list[4] = new material();
-    *d_mat_list[4] = material::emissive(color(1, 1, 1), 5); //light
+    //*d_mat_list[3] = material::lambertian(color(.75f, .75f, .75f)); //white
+    *d_mat_list[4] = material::emissive(color(1.f, 1.f, 1.f), 5.f); //light
 
-    
-    tri** bottom_faces = reinterpret_cast<tri**>(&d_list[0]);
-    //tri** back_faces = reinterpret_cast<tri**>(&d_list[2]);
-    //tri** light_faces = reinterpret_cast<tri**>(&d_list[0]);
-    tri_quad bottom = tri_quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[0], bottom_faces);
-    //tri_quad back = tri_quad(point3(555, 555, 555), vec3(0, 0, -555), vec3(-555, 0, 0), d_mat_list[3], back_faces);
-    //tri_quad light = tri_quad(point3(343, 554, 332), vec3(-130, 0, 0), vec3(0, 0, -105), d_mat_list[4], light_faces);
-    
-    //d_list[0] = new tri(point3(0, 0, 0), vec3(0.f, 0, 555), vec3(555, 0, 0), d_mat_list[0], CreationMode::VECTORS);
-    //d_list[1] = new tri(point3(555, 0, 555), vec3(0, 0, -555), vec3(-555, 0, 0), d_mat_list[0], CreationMode::VECTORS);
-    //d_list[0] = new quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[0]);
+    hittable** bottom_faces = &d_list[0];
+    hittable** top_faces = &d_list[2];
+    hittable** back_faces = &d_list[4];
+    hittable** left_faces = &d_list[6];
+    hittable** right_faces = &d_list[8];
+    hittable** light_faces = &d_list[10];
 
-    
-    float height_shift = 0.f;
-
-    
-    point3 v1 = point3(0.f, 0.f + height_shift, 555.f);
-    point3 v2 = point3(555.f, 0.f + height_shift, 555.f);
-    point3 v3 = point3(555.f/2.f, 555.f + height_shift, 555.f);
-
-    d_list[2] = new tri(v1, v3, v2, d_mat_list[1]);
+    tri_quad bottom = tri_quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[3], bottom_faces);
+    tri_quad back = tri_quad(point3(0, 0, 555.f), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[3], back_faces);
+    tri_quad top = tri_quad(point3(555, 555, 555), vec3(-555, 0, 0), vec3(0, 0, -555), d_mat_list[3], top_faces);
+    tri_quad left = tri_quad(point3(555, 0, 0), vec3(0, 0, 555), vec3(0, 555, 0), d_mat_list[1], left_faces);
+    tri_quad right = tri_quad(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[0], right_faces);
+    tri_quad light = tri_quad(point3(343, 554, 332), vec3(-130, 0, 0), vec3(0, 0, -105), d_mat_list[4], light_faces);
 
     /*
-    d_list[3] = new sphere(v1, 20.f, d_mat_list[0]);
-    d_list[4] = new sphere(v2, 20.f, d_mat_list[1]);
-    d_list[5] = new sphere(v3, 20.f, d_mat_list[2]);
+    hittable** box_1_tris = &d_list[12];
+    hittable** box_2_tris = &d_list[24];
+    hittable** air_tris = &d_list[36];
+    hittable** box_3_tris = &d_list[48];
     */
-    
-    
 
+    tri_box box1 = tri_box(point3(0.f, 0.f, 0.f), point3(165.f, 330.f, 165.f), d_mat_list[3], &d_list[12]);
+    box1.rotate(degrees_to_radians(15.f), transform::AXIS::Y, false);
+    box1.translate(vec3(265.f, 0.f, 295.f));
+
+    tri_box box2 = tri_box(point3(0.f, 0.f, 0.f), point3(165.f, 165.f, 165.f), d_mat_list[2], &d_list[24]);
+    box2.rotate(degrees_to_radians(-18.f), transform::AXIS::Y, false);
+    box2.translate(vec3(130.f, 0.f, 65.f));
+
+    tri_box air = tri_box(box2, d_mat_list[2], &d_list[36], 1.f);
+    air.flip_normals();
 }
 
 __device__
@@ -399,7 +409,7 @@ void scene::init_world_parameters(uint world_selector, int *world_size_ptr, int 
             break;
         case 4:
             //prism test
-            *world_size_ptr = 5 + 1 + 6; //walls + light + +light walls + prism
+            *world_size_ptr = 5 + 1 + 6; //walls + light +light walls + prism
             *n_materials_ptr = 3; //white + emission + dielectric
             break;
 
@@ -411,7 +421,7 @@ void scene::init_world_parameters(uint world_selector, int *world_size_ptr, int 
 
         case 6:
             //tris
-            *world_size_ptr = 3;
+            *world_size_ptr = 12 + 12 + 12 + 12;
             *n_materials_ptr = 5;
             break;
 
@@ -527,7 +537,8 @@ camera_builder scene::tris_camera_builder() {
     vec3 vup = vec3(0, 1, 0);
     float defocus_angle = 0.0f;
     float focus_dist = 10.0f;
-    color background = color(0.7, 0.7, 1.0);
+    color background = color(0.0f, .0f, 0.f);
+    //color background = color(0.7f, .7f, 1.f);
 
     return camera_builder().
         setAspectRatio(1.0f).
@@ -602,8 +613,7 @@ bool scene::create_bvh(hittable** d_world, size_t world_size, bvh** d_bvh) {
 }
 
 __host__
-void scene::create_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials,
-                  float* dev_sRGBToSpectrum_Data) {
+void scene::create_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials, float* dev_sRGBToSpectrum_Data) {
     create_world_kernel<<<1, 1>>>(WORLD_SELECTOR, d_list, d_mat_list, world_size, n_materials, dev_sRGBToSpectrum_Data);
 }
 
@@ -651,6 +661,8 @@ const result scene_manager::init_world() {
         }
 
         //copy constant to device global memory (cannot use constant memory since table is too big)
+        
+        
         float *dev_ColorToSpectrum_Data;
         checkCudaErrors(cudaMalloc((void **) &dev_ColorToSpectrum_Data, 3 * 64 * 64 * 64 * 3 * sizeof(float)));
         if (dev_ColorToSpectrum_Data == nullptr) {
@@ -659,6 +671,8 @@ const result scene_manager::init_world() {
         checkCudaErrors(
                 cudaMemcpy(dev_ColorToSpectrum_Data, sRGBToSpectrumTable_Data, 3 * 64 * 64 * 64 * 3 * sizeof(float),
                            cudaMemcpyHostToDevice));
+        
+                           
 
         //build hittables and materials
         create_world(dev_world, dev_mat_list, dev_world_size_ptr, dev_n_materials_ptr, dev_ColorToSpectrum_Data);

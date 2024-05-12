@@ -18,12 +18,11 @@ public:
 		return size * sizeof(vec3);
 	}
 
-	void split_channels(unsigned char* r, unsigned char* g, unsigned char* b) {
+	void split_channels(unsigned char* r, unsigned char* g, unsigned char* b) const {
 		for (size_t i = 0; i < size; i++) {
-			size_t idx = i;
-			r[idx] = static_cast<unsigned char>(data[i].e[0]);
-			g[idx] = static_cast<unsigned char>(data[i].e[1]);
-			b[idx] = static_cast<unsigned char>(data[i].e[2]);
+			r[i] = static_cast<unsigned char>(data[i].e[0]);
+			g[i] = static_cast<unsigned char>(data[i].e[1]);
+			b[i] = static_cast<unsigned char>(data[i].e[2]);
 		}
 	}
 
@@ -33,7 +32,7 @@ public:
 
 struct image_channels {
 
-	image_channels(frame_buffer fb) {
+	image_channels(frame_buffer& fb) {
 		size_t size = fb.size;
 		r = new unsigned char[size];
 		g = new unsigned char[size];
@@ -41,6 +40,11 @@ struct image_channels {
 
 		fb.split_channels(r, g, b);
 	}
+	image_channels& operator=(const frame_buffer& fb) {
+		fb.split_channels(r, g, b);
+		return *this;
+	}
+
 
 	~image_channels() {
 		delete[] r;

@@ -5,8 +5,9 @@
 #ifndef SPECTRAL_RT_PROJECT_CAMERA_CUH
 #define SPECTRAL_RT_PROJECT_CAMERA_CUH
 
-#include "rendering.cuh"
-#include "frame_buffer.cuh"
+#include "vec3.cuh"
+#include "color.cuh"
+#include "utility.cuh"
 
 class camera {
 
@@ -21,12 +22,6 @@ public:
 
     __host__
     camera() {};
-
-    __host__
-    void render(frame_buffer* fb, bvh **bvh, uint bounce_limit, uint samples_per_pixel) const;
-
-    __host__
-    void render(frame_buffer* fb, bvh **bvh, uint bounce_limit, uint samples_per_pixel, dim3 blocks, dim3 threads) const;
 
     //getters
 
