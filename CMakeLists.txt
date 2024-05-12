@@ -20,6 +20,7 @@ set(SUBDIRECTORIES
     "${CMAKE_CURRENT_SOURCE_DIR}/math"
     "${CMAKE_CURRENT_SOURCE_DIR}/io"
     "${CMAKE_CURRENT_SOURCE_DIR}/scene"
+    "${CMAKE_CURRENT_SOURCE_DIR}/image"
     "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 add_executable(spectral-rt-project
@@ -44,7 +45,8 @@ add_executable(spectral-rt-project
         primitives/tri_quad.cu
         primitives/prism.cu
         primitives/tri_box.cu
-        io/save_image.cpp)
+        io/save_image.cpp
+        image/image.cpp)
 
 set_target_properties(spectral-rt-project PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
