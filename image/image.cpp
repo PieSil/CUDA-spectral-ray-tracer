@@ -19,7 +19,6 @@ uchar_img get_image(unsigned char* r, unsigned char* g, unsigned char* b, const 
 
 img_display get_image_display(const char* title) {
     cimg_library::CImgDisplay disp;
-    std::clog << title << std::endl;
     disp.set_title(title);
     return disp;
 }
