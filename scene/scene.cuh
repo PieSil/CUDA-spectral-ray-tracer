@@ -113,65 +113,6 @@ namespace scene {
             destroy_world();
         }
 
-        int *h_n_materials_ptr = new int;
-        int *h_world_size_ptr = new int;
-
-        void render() {
-            if (renderer_inited)
-                r.call_render_kernel();
-            else
-                cerr << "Renderer not yet initialized";
-        }
-
-        void init_renderer(frame_buffer* fb, uint bounce_limit, uint samples_per_pixel) {
-            if (cam_inited && world_inited) {
-                r = renderer(fb, dev_bvh, samples_per_pixel, &cam, bounce_limit);
-                renderer_inited = true;
-            }
-
-            else {
-                if (!cam_inited)
-                    cerr << "Camera not yet initialized" << endl;
-                if(!world_inited)
-                    cerr << "World not yet initialized" << endl;
-            }
-        }
-
-        void init_device_params(uint threads, uint blocks, uint chunk_width, uint chunk_height) {
-            if (renderer_inited) {
-                r.init_device_params(threads, blocks, chunk_width, chunk_height);
-            } else 
-                cerr << "Init renderer before assigning device parameters" << endl;
-        }
-
-        void init_device_params(uint chunk_width, uint chunk_height) {
-            if (renderer_inited) {
-                uint tx = 8;
-                uint ty = 8;
-
-                dim3 blocks(cam.getImageWidth() / tx + 1, cam.getImageHeight() / ty + 1);
-                dim3 threads(tx, ty);
-                r.init_device_params(threads, blocks, chunk_width, chunk_height);
-            }
-            else
-                cerr << "Init renderer before assigning device parameters" << endl;
-        }
-
-        void init_device_params() {
-            if (renderer_inited) {
-                uint width = cam.getImageWidth();
-                uint height = cam.getImageHeight();
-                uint tx = 8;
-                uint ty = 8;
-
-                dim3 blocks(width / tx + 1, height / ty + 1);
-                dim3 threads(tx, ty);
-                r.init_device_params(threads, blocks, width, height);
-            }
-            else
-                cerr << "Init renderer before assigning device parameters" << endl;
-        }
-
         [[nodiscard]] result getResult() const {
             return world_result;
         }
@@ -182,6 +123,20 @@ namespace scene {
 
         const uint img_height() const {
             return cam.getImageHeight();
+        }
+
+        bvh** getWorld() {
+            if (world_inited)
+                return dev_bvh;
+            else
+                return nullptr;
+        }
+
+        camera* getCamPtr() {
+            if (cam_inited)
+                return &cam;
+            else
+                return nullptr;
         }
 
 
@@ -195,6 +150,9 @@ namespace scene {
         __host__
         void destroy_world();
 
+        int* h_n_materials_ptr = new int;
+        int* h_world_size_ptr = new int;
+
         hittable **dev_world;
         material **dev_mat_list;
         bvh **dev_bvh;
@@ -202,8 +160,6 @@ namespace scene {
         camera cam;
         bool cam_inited = false;
         bool world_inited = false;
-        renderer r;
-        bool renderer_inited = false;
 
         result world_result;
     };

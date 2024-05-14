@@ -46,7 +46,8 @@ add_executable(spectral-rt-project
         primitives/prism.cu
         primitives/tri_box.cu
         io/save_image.cpp
-        image/image.cpp)
+        image/image.cpp
+        rendering/render_manager.cu)
 
 set_target_properties(spectral-rt-project PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
