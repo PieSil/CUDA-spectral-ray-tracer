@@ -1,80 +1,65 @@
 #include "render_manager.cuh"
 
-void render_manager::step() {
-	if (device_inited && i < n_iterations) {
+bool render_manager::step() {
 
+	//read and update shared data
 
-		/*
-		if (i == n_iterations - 1) {
-			uint endpoint_x = chunk_width + offset_x;
-			uint endpoint_y = chunk_height + offset_y;
-			last_chunk_width = chunk_width - (endpoint_x - image_width);
-			last_chunk_height = chunk_height - (endpoint_y - image_height);
-		}
-		else {
-			last_chunk_width = chunk_width;
-			last_chunk_height = chunk_height;
-		}
-		*/
+	uint endpoint_x = chunk_width + offset_x;
+	uint endpoint_y = chunk_height + offset_y;
+	bool last_step = false;
 
-
-		uint endpoint_x = chunk_width + offset_x;
-		uint endpoint_y = chunk_height + offset_y;
-
-		if (endpoint_x > image_width) {
-			last_chunk_width = chunk_width - (endpoint_x - image_width);
-		}
-		else {
-			last_chunk_width = chunk_width;
-
-		}
-
-		if (endpoint_y > image_height) {
-			last_chunk_height = chunk_height - (endpoint_y - image_height);
-		}
-		else {
-			last_chunk_height = chunk_height;
-		}
-
-
-		//uint linear_offset = (cam->getImageWidth() % chunk_width); //linear index of the first pixel of the next chunk to render
-		r.render(last_chunk_width, last_chunk_height, offset_x, offset_y);
-
-		checkCudaErrors(cudaMemcpy(tmp_fb, r.getDevFB(), chunk_width * chunk_height * sizeof(vec3), cudaMemcpyDeviceToHost));
-
-		i++;
-
-
-		last_offset_x = offset_x;
-		last_offset_y = offset_y;
-
-		/*
-		offset_x += last_chunk_width;
-		if (offset_x >= image_width) {
-			offset_x -= image_width;
-
-			offset_y += last_chunk_height;
-			if (offset_y >= image_height) {
-				offset_y -= image_height;
-			}
-		}
-		*/
-
-		uint n_row = i / x_chunks;
-		uint n_col = i % x_chunks;
-
-		last_offset_x = offset_x;
-		last_offset_y = offset_y;
-
-		offset_x = n_col * chunk_width;
-		offset_y = n_row * chunk_height;
-
-
-
-		checkCudaErrors(cudaDeviceSynchronize());
+	if (endpoint_x > image_width) {
+		last_chunk_width = chunk_width - (endpoint_x - image_width);
 	}
-	else
-		cerr << "Device parameters not yet initialized";
+	else {
+		last_chunk_width = chunk_width;
+
+	}
+
+	if (endpoint_y > image_height) {
+		last_chunk_height = chunk_height - (endpoint_y - image_height);
+	}
+	else {
+		last_chunk_height = chunk_height;
+	}
+
+	//get next render data object
+	render_step_data* render_data = &render_data_container[next_write_render_data_index];
+	uint index = next_write_render_data_index;
+	next_write_render_data_index = (next_write_render_data_index + 1) % 2;
+
+	render_data->empty.acquire(); //acquire write access on render data object
+
+	render_data->chunk_width = last_chunk_width;
+	render_data->chunk_height = last_chunk_height;
+
+	render_data->starting_offset_x = offset_x;
+	render_data->starting_offset_y = offset_y;
+
+	r.render(last_chunk_width, last_chunk_height, offset_x, offset_y);
+
+	checkCudaErrors(cudaMemcpy(render_data->fb, r.getDevFB(), chunk_width * chunk_height * sizeof(vec3), cudaMemcpyDeviceToHost));
+	
+
+	i++;
+	if (i == n_iterations) {
+		render_data->is_last = true;
+		last_step = true;
+	}
+
+	checkCudaErrors(cudaDeviceSynchronize());
+	render_data->full.release(); //grant read access to produced render data
+
+	last_offset_x = offset_x;
+	last_offset_y = offset_y;
+
+	uint n_row = i / x_chunks;
+	uint n_col = i % x_chunks;
+
+	offset_x = n_col * chunk_width;
+	offset_y = n_row * chunk_height;
+
+	return !last_step;
 }
 
 void render_manager::init_device_params(dim3 threads, dim3 blocks, uint _chunk_width, uint _chunk_height) {
@@ -91,7 +76,8 @@ void render_manager::init_device_params(dim3 threads, dim3 blocks, uint _chunk_w
 		r.init_device_params(threads, blocks, chunk_width, chunk_height);
 		device_inited = true;
 
-		tmp_fb = new vec3[chunk_size];
+		render_data_container[0].alloc_buffer(chunk_size);
+		render_data_container[1].alloc_buffer(chunk_size);
 	}
 	else
 		cerr << "Initialize renderer before assigning device parameters" << endl;
