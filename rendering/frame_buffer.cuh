@@ -40,11 +40,11 @@ struct image_channels {
 
 		fb.split_channels(r, g, b);
 	}
+
 	image_channels& operator=(const frame_buffer& fb) {
 		fb.split_channels(r, g, b);
 		return *this;
 	}
-
 
 	~image_channels() {
 		delete[] r;
