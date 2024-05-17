@@ -21,8 +21,6 @@
 #define N_SPHERES (N_RANDOM_SPHERES + N_NON_RANDOM_SPHERES)
 #define RANDOM_WORLD_SIZE N_SPHERES
 
-#define WORLD_SELECTOR 6
-
 #include "cuda_utility.cuh"
 #include "bvh.cuh"
 #include "sphere.cuh"
@@ -36,8 +34,23 @@
 #include "prism.cuh"
 #include "tri_box.cuh"
 #include "rendering.cuh"
+#include "log_context.h";
 
 namespace scene {
+
+    enum WorldName {
+        RANDOM,
+        QUADS,
+        SIMPLE_LIGHT,
+        CORNELL,
+        PRISM,
+        TRIS,
+        SPHERES
+    };
+
+    static const auto selected_world = WorldName::TRIS;
+    static const string selectorToStr[] = {"Random World", "Quad World", "Simple Light", "Cornell Box Quads", "Prism World", "Triangles", "Spheres"};
+
     __device__
     void device_random_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials);
 
@@ -60,7 +73,7 @@ namespace scene {
     void device_3_spheres(hittable** d_list, material** d_mat_list);
 
     __host__
-    void init_world_parameters(uint world_selector, int *world_size_ptr, int *n_materials_ptr);
+    void init_world_parameters(WorldName world_selector, int *world_size_ptr, int *n_materials_ptr);
 
     __host__
     camera_builder random_world_cam_builder();

@@ -20,7 +20,7 @@ void create_bvh_kernel(hittable **d_world, size_t world_size, bvh **d_bvh, bool 
 }
 
 __global__
-void create_world_kernel(uint world_selector, hittable **d_list, material **d_mat_list, int *world_size, int *n_materials, float* dev_sRGBToSpectrum_Data) {
+void create_world_kernel(WorldName world_selector, hittable **d_list, material **d_mat_list, int *world_size, int *n_materials, float* dev_sRGBToSpectrum_Data) {
 
     /*
      * initialize hittables and materials based on a world selector
@@ -28,30 +28,30 @@ void create_world_kernel(uint world_selector, hittable **d_list, material **d_ma
 
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         switch(world_selector){
-            case 0:
+            case RANDOM:
                 device_random_world(d_list, d_mat_list, world_size, n_materials);
                 break;
-            case 1:
+            case QUADS:
                 device_quad_world(d_list, d_mat_list);
                 break;
 
-            case 2:
+            case SIMPLE_LIGHT:
                 device_simple_light(d_list, d_mat_list);
                 break;
 
-            case 3:
+            case CORNELL:
                 device_cornell_box(d_list, d_mat_list);
                 break;
 
-            case 4:
+            case PRISM:
                 device_prism_test(d_list, d_mat_list);
                 break;
 
-            case 5:
+            case SPHERES:
                 device_3_spheres(d_list, d_mat_list);
                 break;
 
-            case 6:
+            case TRIS:
                 device_tri_world(d_list, d_mat_list);
                 break;
 
@@ -70,9 +70,6 @@ void create_world_kernel(uint world_selector, hittable **d_list, material **d_ma
             d_mat_list[i]->compute_albedo_spectrum(dev_sRGBToSpectrum_Data);
             d_mat_list[i]->compute_emittance_spectrum(dev_sRGBToSpectrum_Data);
         }
-        
-        
-        
 
     }
 }
@@ -377,49 +374,49 @@ void scene::device_3_spheres(hittable** d_list, material** d_mat_list) {
 }
 
 __host__
-void scene::init_world_parameters(uint world_selector, int *world_size_ptr, int *n_materials_ptr) {
+void scene::init_world_parameters(WorldName world_selector, int *world_size_ptr, int *n_materials_ptr) {
 
     /*
      * select correct parameters (hard-coded) based on world selector
      */
 
     switch (world_selector) {
-        case 0:
+        case RANDOM:
             //random world
             *world_size_ptr = RANDOM_WORLD_SIZE;
             *n_materials_ptr = RANDOM_WORLD_MATERIALS;
             break;
 
-        case 1:
+        case QUADS:
             //quads
             *world_size_ptr = 5;
             *n_materials_ptr = 5;
             break;
 
-        case 2:
+        case SIMPLE_LIGHT:
             //light
             *world_size_ptr = 4;
             *n_materials_ptr = 4;
             break;
 
-        case 3:
+        case CORNELL:
             //cornell
             *world_size_ptr = 6+6+6;
             *n_materials_ptr = 4+2;
             break;
-        case 4:
+        case PRISM:
             //prism test
             *world_size_ptr = 5 + 1 + 6; //walls + light +light walls + prism
             *n_materials_ptr = 3; //white + emission + dielectric
             break;
 
-        case 5:
+        case SPHERES:
             //spheres
             *world_size_ptr = 5;
             *n_materials_ptr = 5;
             break;
 
-        case 6:
+        case TRIS:
             //tris
             *world_size_ptr = 12 + 12 + 12 + 12;
             *n_materials_ptr = 5;
@@ -614,7 +611,7 @@ bool scene::create_bvh(hittable** d_world, size_t world_size, bvh** d_bvh) {
 
 __host__
 void scene::create_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials, float* dev_sRGBToSpectrum_Data) {
-    create_world_kernel<<<1, 1>>>(WORLD_SELECTOR, d_list, d_mat_list, world_size, n_materials, dev_sRGBToSpectrum_Data);
+    create_world_kernel<<<1, 1>>>(selected_world, d_list, d_mat_list, world_size, n_materials, dev_sRGBToSpectrum_Data);
 }
 
 __host__
@@ -634,7 +631,7 @@ const result scene_manager::init_world() {
         int *dev_world_size_ptr = nullptr;
 
         //select the correct values for size and #materials
-        init_world_parameters(WORLD_SELECTOR, h_world_size_ptr, h_n_materials_ptr);
+        init_world_parameters(selected_world, h_world_size_ptr, h_n_materials_ptr);
 
         //copy parameters to device memory so they can be modified from device code
         checkCudaErrors(cudaMalloc((void **) &dev_n_materials_ptr, sizeof(int)));
@@ -695,6 +692,11 @@ const result scene_manager::init_world() {
             return {false, "Error building BVH\n"};
         }
 
+        auto lc = log_context::getInstance();
+        lc->add_entry("scene type", selectorToStr[selected_world]);
+        lc->add_entry("# primitives", *h_world_size_ptr);
+        lc->add_entry("# materials", *h_n_materials_ptr);
+
         checkCudaErrors(cudaGetLastError());
         checkCudaErrors(cudaDeviceSynchronize());
 
@@ -704,26 +706,26 @@ const result scene_manager::init_world() {
 
 __host__
 void scene_manager::init_camera() {
-    switch (WORLD_SELECTOR) {
-        case 0:
+    switch (selected_world) {
+    case WorldName::RANDOM:
             cam = random_world_cam_builder().getCamera();
             break;
-        case 1:
+    case WorldName::QUADS:
             cam = quad_world_camera_builder().getCamera();
             break;
-        case 2:
+    case WorldName::SIMPLE_LIGHT:
             cam = simple_light_camera_builder().getCamera();
             break;
-        case 3:
+    case WorldName::CORNELL:
             cam = cornell_box_camera_builder().getCamera();
             break;
-        case 4:
+    case WorldName::PRISM:
             cam = prism_test_camera_builder().getCamera();
             break;
-        case 5:
+    case WorldName::SPHERES:
             cam = spheres_camera_builder().getCamera();
             break;
-        case 6:
+    case WorldName::TRIS:
             cam = tris_camera_builder().getCamera();
             break;
 
@@ -731,6 +733,10 @@ void scene_manager::init_camera() {
             cam = random_world_cam_builder().getCamera();
             break;
     }
+
+    auto lc = log_context::getInstance();
+    lc->add_entry("image width", cam.getImageWidth());
+    lc->add_entry("image height", cam.getImageHeight());
 
     cam_inited = true;
 }

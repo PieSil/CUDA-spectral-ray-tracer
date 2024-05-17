@@ -14,6 +14,7 @@
 #include "frame_buffer.cuh"
 #include "material.cuh"
 #include "camera.cuh"
+#include "log_context.h"
 
 struct camera_data {
 

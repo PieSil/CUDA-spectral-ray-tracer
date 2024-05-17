@@ -287,5 +287,21 @@ void renderer::init_device_params(dim3 _threads, dim3 _blocks, uint _max_chunk_w
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 
+    auto lc = log_context::getInstance();
+    lc->add_entry("chunk width", max_chunk_width);
+    lc->add_entry("chunk height", max_chunk_height);
+
+    lc->add_entry("chunk total byte size", max_num_pixels * sizeof(vec3));
+    lc->add_entry("shared memory byte size", shared_mem_size);
+    lc->add_entry("threads x", threads.x);
+    lc->add_entry("threads y", threads.y);
+    lc->add_entry("threads z", threads.z);
+
+    lc->add_entry("blocks x", blocks.x);
+    lc->add_entry("blocks y", blocks.y);
+    lc->add_entry("blocks z", blocks.z);
+
+    
+
     device_inited = true;
 }

@@ -4,6 +4,7 @@
 #include "camera.cuh"
 #include "rendering.cuh"
 #include "multithread.cuh"
+#include "log_context.h"
 
 struct render_step_data {
 

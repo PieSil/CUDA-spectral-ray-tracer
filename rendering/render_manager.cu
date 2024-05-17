@@ -78,6 +78,8 @@ void render_manager::init_device_params(dim3 threads, dim3 blocks, uint _chunk_w
 
 		render_data_container[0].alloc_buffer(chunk_size);
 		render_data_container[1].alloc_buffer(chunk_size);
+
+		auto lc = log_context::getInstance();
 	}
 	else
 		cerr << "Initialize renderer before assigning device parameters" << endl;
@@ -116,6 +118,10 @@ void render_manager::init_device_params() {
 void render_manager::init_renderer(uint bounce_limit, uint samples_per_pixel) {
 	if (scene_inited) {
 		r = renderer(dev_bvh, samples_per_pixel, cam, bounce_limit);
+		auto lc = log_context::getInstance();
+		lc->add_entry("samples per pixel", samples_per_pixel);
+		lc->add_entry("bounce limit", bounce_limit);
+
 		renderer_inited = true;
 	}
 	else {
