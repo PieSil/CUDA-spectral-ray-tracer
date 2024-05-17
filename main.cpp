@@ -4,8 +4,9 @@
 #include "save_image.h"
 #include "image.h"
 #include "render_manager.cuh"
+#include "log_context.h"
 
-#define SAMPLES_PER_PIXEL 1000
+#define SAMPLES_PER_PIXEL 100
 #define BOUNCE_LIMIT 10
 
 using namespace scene;
@@ -47,6 +48,8 @@ bool start_render(render_manager& rm, frame_buffer& fb, uchar_img& dst_image, im
 
         stop = clock();
         double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
+        auto lc = log_context::getInstance();
+        lc->add_entry("total rendering time (seconds)", timer_seconds);
         std::clog << "done, took " << timer_seconds << " seconds.\n";
         rm.end_render();
         completed = true;
@@ -113,6 +116,10 @@ int main() {
     init_device_symbols();
     //clog << "Multithread" << endl;
     render_cycle();
+    auto lc = log_context::getInstance();
+    lc->append_dir("tests");
+    lc->add_filename_option(FilenameOption::TIMESTAMP);
+    lc->to_file();
 
     //clog << "Single thread" << endl;
     //render_cycle(false);

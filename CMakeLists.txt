@@ -21,7 +21,8 @@ set(SUBDIRECTORIES
     "${CMAKE_CURRENT_SOURCE_DIR}/io"
     "${CMAKE_CURRENT_SOURCE_DIR}/scene"
     "${CMAKE_CURRENT_SOURCE_DIR}/image"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include")
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/_log_")
 
 add_executable(spectral-rt-project
         main.cpp
@@ -47,7 +48,8 @@ add_executable(spectral-rt-project
         primitives/tri_box.cu
         io/save_image.cpp
         image/image.cpp
-        rendering/render_manager.cu)
+        rendering/render_manager.cu
+        _log_/log_context.cpp "io/params.h")
 
 set_target_properties(spectral-rt-project PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
