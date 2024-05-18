@@ -5,7 +5,6 @@
 #ifndef COLOR_CONVERSION_COLOR_TO_SPECTRUM_H
 #define COLOR_CONVERSION_COLOR_TO_SPECTRUM_H
 
-#include "utility.cuh"
 #include "color.cuh"
 #include "srgb_to_spectrum.cuh"
 

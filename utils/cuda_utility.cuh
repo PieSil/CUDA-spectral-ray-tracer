@@ -6,6 +6,7 @@
 #include <device_launch_parameters.h>
 #endif
 
+#include "utility.h"
 #include <curand_kernel.h>
 #include <iostream>
 #include <string>
@@ -34,6 +35,11 @@ void random_permutation(int *indices, int size, curandState *local_rand_state);
 __device__
 inline bool thread_matches(uint tx = 0, uint ty = 0, uint bx = 0, uint by = 0) {
     return (threadIdx.x == tx && threadIdx.y == ty && blockIdx.x == bx && blockIdx.y == by);
+}
+
+__host__ __device__
+inline float degrees_to_radians(float degrees) {
+    return degrees * PI / 180.0f;
 }
 
 #endif //RTWEEKEND_CUDA_CUDA_UTILITY_CUH

@@ -12,9 +12,11 @@
 #include <string>
 #include <chrono>
 #include <unordered_map>
+#include <set>
 #include <vector>
 #include <memory>
 #include <filesystem>
+#include "utility.h"
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -30,7 +32,7 @@ class log_context {
 public:
 	static std::shared_ptr<log_context> getInstance() {
 		if (instance.get() == nullptr) {
-			instance.reset(new log_context());
+			instance = make_shared<log_context>(log_context());
 		}
 
 		return instance;
@@ -45,29 +47,37 @@ public:
 	void add_filename_option(const FilenameOption opt);
 
 	void setPath(const string path_str) {
-		rel_path = fs::path(path_str);
+		if (!path_str.empty()) {
+			rel_path = fs::path(path_str);
+		}
 	}
 
 	void setFilename(const string new_filename) {
-		string new_path = rel_path.parent_path().string();
+		if (!new_filename.empty()) {
+			string new_path = rel_path.parent_path().string();
 
-		new_path.append(OS_SEP).append(new_filename);
-		setPath(new_path);
+			new_path.append(OS_SEP).append(new_filename);
+			setPath(new_path);
+		}
 	}
 
 	void setDir(const string new_dir) {
-		string new_path = new_dir;
-		string file = rel_path.filename().string();
+		if (!new_dir.empty()) {
+			string new_path = new_dir;
+			string file = rel_path.filename().string();
 
-		new_path.append(OS_SEP).append(file);
-		setPath(new_path);
+			new_path.append(OS_SEP).append(file);
+			setPath(new_path);
+		}
 	}
 
 	void append_dir(const string dirname) {
-		string new_dir = rel_path.parent_path().string();
-		new_dir.append(OS_SEP).append(dirname);
+		if (!dirname.empty()) {
+			string new_dir = rel_path.parent_path().string();
+			new_dir.append(OS_SEP).append(dirname);
 
-		setDir(new_dir);
+			setDir(new_dir);
+		}
 	}
 
 	void add_title(const string _title);
@@ -96,7 +106,7 @@ private:
 	static std::shared_ptr<log_context> instance;
 	fs::path rel_path;
 	vector<string> data_insertion_order;
-	vector<FilenameOption> name_options;
+	set<FilenameOption> name_options;
 	unordered_map<string, string> data;
 };
 

@@ -6,22 +6,12 @@
 #define RTWEEKEND_CUDA_CAMERA_BUILDER_CUH
 
 #include "camera.cuh"
+#include "params.h"
 
 //Builder
 
 class camera_builder {
 public:
-    __host__
-    camera_builder setAspectRatio(float ar) {
-        aspect_ratio = ar;
-        return *this;
-    }
-
-    __host__
-    camera_builder setImageWidth(int w) {
-        image_width = w;
-        return *this;
-    }
 
     __host__
     camera_builder setVfov(float _vfov) {
@@ -66,12 +56,11 @@ public:
 
     __host__
     camera getCamera() {
-        return camera(aspect_ratio, image_width, vfov, lookfrom, lookat, vup, defocus_angle, focus_dist, background);
+        auto pm = param_manager::getInstance();
+        return camera(pm->getParams().getAR(), pm->getParams().getXres(), pm->getParams().getYres(), vfov, lookfrom, lookat, vup, defocus_angle, focus_dist, background);
     }
 
 private:
-    float aspect_ratio = 1.0;
-    int image_width = 400;
     float vfov = 90.0f;
     point3 lookfrom = point3(0,0,-1);
     point3 lookat = point3(0,0,0);

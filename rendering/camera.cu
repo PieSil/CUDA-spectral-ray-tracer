@@ -6,8 +6,8 @@
 
 __host__ void camera::initialize() {
     /* Calculate the image height, and ensure that it's at least 1 */
-    image_height = static_cast<int>(image_width / aspect_ratio);
-    image_height = (image_height < 1) ? 1 : image_height;
+    //image_height = static_cast<int>(image_width / aspect_ratio);
+    //image_height = (image_height < 1) ? 1 : image_height;
     num_pixels = image_width * image_height;
 
     center = lookfrom;

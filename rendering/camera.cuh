@@ -7,15 +7,13 @@
 
 #include "vec3.cuh"
 #include "color.cuh"
-#include "utility.cuh"
-
 class camera {
 
 public:
 
     __host__
-    camera(float ar, int w, float _vfov, point3 _lookfrom, point3 _lookat, vec3 _vup, float _da, float _fd, color bg)
-            : aspect_ratio(ar), image_width(w), vfov(_vfov), lookfrom(_lookfrom),
+    camera(float ar, int w, int h, float _vfov, point3 _lookfrom, point3 _lookat, vec3 _vup, float _da, float _fd, color bg)
+            : aspect_ratio(ar), image_width(w), image_height(h), vfov(_vfov), lookfrom(_lookfrom),
               lookat(_lookat),vup(_vup), defocus_angle(_da), focus_dist(_fd), background(bg) {
         initialize();
     }

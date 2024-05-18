@@ -105,7 +105,7 @@ public:
 		return (device_inited && i < n_iterations);
 	}
 
-	void start_render() {
+	void render_cycle() {
 		end_render();
 
 		done = false;

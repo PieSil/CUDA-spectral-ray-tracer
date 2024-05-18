@@ -5,13 +5,14 @@
 #include "image.h"
 #include "render_manager.cuh"
 #include "log_context.h"
+#include "params.h"
 
 #define SAMPLES_PER_PIXEL 100
 #define BOUNCE_LIMIT 10
 
 using namespace scene;
 
-bool start_render(render_manager& rm, frame_buffer& fb, uchar_img& dst_image, img_display& disp, image_channels& ch, bool multithread = true) {
+bool render_cycle(render_manager& rm, frame_buffer& fb, uchar_img& dst_image, img_display& disp, image_channels& ch, bool multithread = true) {
     bool completed = false;
     if (rm.isReadyToRender()) {
         disp.display(dst_image);
@@ -22,7 +23,7 @@ bool start_render(render_manager& rm, frame_buffer& fb, uchar_img& dst_image, im
         std::clog << "Rendering... ";
         
         if (multithread) {
-            rm.start_render();
+            rm.render_cycle();
             bool has_data = true;
 
             do {
@@ -61,7 +62,7 @@ bool start_render(render_manager& rm, frame_buffer& fb, uchar_img& dst_image, im
     return completed;
 }
 
-void render_cycle(bool multithread = true) {
+void render(bool multithread = true) {
     scene_manager sm = scene_manager();
     result res = sm.getResult();
     if (res.success) {
@@ -75,8 +76,9 @@ void render_cycle(bool multithread = true) {
 
         render_manager rm(sm.getWorld(), sm.getCamPtr(), fb.data);
 
-        rm.init_renderer(BOUNCE_LIMIT, SAMPLES_PER_PIXEL);
-        rm.init_device_params(200, 200);
+        auto pm = param_manager::getInstance();
+        rm.init_renderer(pm->getParams().getBounceLimit(), pm->getParams().getNSamples());
+        rm.init_device_params(pm->getParams().getXcsize(), pm->getParams().getYcsize());
 
         /*
         while (!rm.isDone()) {
@@ -95,14 +97,17 @@ void render_cycle(bool multithread = true) {
         disp.render(image);
         disp.paint();
         */
+        if (render_cycle(rm, fb, image, disp, ch, multithread)) {
+            log_context::getInstance()->to_file();
 
-        if (start_render(rm, fb, image, disp, ch, multithread)) {
-            /*
-            save_img(image, "test.bmp");
+            string ext = ".bmp";
+            string image_filename = param_manager::getInstance()->getParams().getImgTitle() + ext;
+            string_to_filename(image_filename);
+            save_img(image, image_filename.c_str());
             while (!disp.is_closed()) {
                 disp.wait();
             }
-            */;
+            
         }
 
         //write_to_ppm(fb.data, width, height);
@@ -112,17 +117,33 @@ void render_cycle(bool multithread = true) {
     }
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    auto pm = param_manager::getInstance();
+    pm->parseArgs(argc, argv);
     init_device_symbols();
-    //clog << "Multithread" << endl;
-    render_cycle();
     auto lc = log_context::getInstance();
-    lc->append_dir("tests");
-    lc->add_filename_option(FilenameOption::TIMESTAMP);
-    lc->to_file();
+    cout << "Image Title: " << pm->getParams().getImgTitle() << endl;
 
-    //clog << "Single thread" << endl;
-    //render_cycle(false);
+    string log_subdir = pm->getParams().getLogSubdir();
+
+    if (!log_subdir.empty()) {
+        cout << "Log Subdir: " << log_subdir << endl;
+    }
+
+    const uint scene_id = pm->getParams().getSceneId();
+    cout << "Scene: " << sceneIdToStr[scene_id] << " (ID: " << scene_id << ")" << endl;
+    cout << "X res: " << pm->getParams().getXres() << endl;
+    cout << "Y res: " << pm->getParams().getYres() << endl;
+    cout << "AR: " << pm->getParams().getAR() << endl;
+    cout << "X chunk size: " << pm->getParams().getXcsize() << endl;
+    cout << "Y chunk size: " << pm->getParams().getYcsize() << endl;
+    cout << "# samples: " << pm->getParams().getNSamples() << endl;
+    cout << "# max bounces: " << pm->getParams().getBounceLimit() << endl;
+
+    lc->append_dir(pm->getParams().getLogSubdir());
+    lc->add_title(pm->getParams().getImgTitle());
+    lc->add_filename_option(FilenameOption::TIMESTAMP);
+    render();
     
     return 0;
 }

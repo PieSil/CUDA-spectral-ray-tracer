@@ -34,22 +34,10 @@
 #include "prism.cuh"
 #include "tri_box.cuh"
 #include "rendering.cuh"
-#include "log_context.h";
+#include "log_context.h"
+#include "params.h"
 
 namespace scene {
-
-    enum WorldName {
-        RANDOM,
-        QUADS,
-        SIMPLE_LIGHT,
-        CORNELL,
-        PRISM,
-        TRIS,
-        SPHERES
-    };
-
-    static const auto selected_world = WorldName::TRIS;
-    static const string selectorToStr[] = {"Random World", "Quad World", "Simple Light", "Cornell Box Quads", "Prism World", "Triangles", "Spheres"};
 
     __device__
     void device_random_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials);
@@ -73,7 +61,7 @@ namespace scene {
     void device_3_spheres(hittable** d_list, material** d_mat_list);
 
     __host__
-    void init_world_parameters(WorldName world_selector, int *world_size_ptr, int *n_materials_ptr);
+    void init_world_parameters(uint world_selector, int *world_size_ptr, int *n_materials_ptr);
 
     __host__
     camera_builder random_world_cam_builder();
@@ -100,7 +88,7 @@ namespace scene {
     bool create_bvh(hittable **d_world, size_t world_size, bvh **d_bvh);
 
     __host__
-    void create_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials, float* dev_sRGBToSpectrum_Data);
+    void create_world(uint selected_world, hittable **d_list, material **d_mat_list, int *world_size, int *n_materials, float* dev_sRGBToSpectrum_Data);
 
     __host__
     void free_world(hittable **d_list, bvh **dev_bvh, material **d_mat_list, int world_size,
@@ -117,6 +105,7 @@ namespace scene {
         explicit scene_manager() {
             cam_inited = false;
             world_inited = false;
+            selected_world = param_manager::getInstance()->getParams().getSceneId();
             init_camera();
             world_result = init_world();
         };
@@ -174,6 +163,7 @@ namespace scene {
         bool cam_inited = false;
         bool world_inited = false;
 
+        uint selected_world;
         result world_result;
     };
 }

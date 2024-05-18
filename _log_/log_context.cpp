@@ -6,7 +6,9 @@ void log_context::to_file() {
 	fs::path dir_path = rel_path.parent_path();
 	fs::create_directories(dir_path);
 
-	string file_path = dir_path.string().append(OS_SEP).append(build_filename());
+	string filename = build_filename();
+	string_to_filename(filename);
+	string file_path = dir_path.string().append(OS_SEP).append(filename);
 	std::ofstream outputFile(file_path);
 
 	// Check if file opened successfully
