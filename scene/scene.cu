@@ -213,44 +213,47 @@ void scene::device_simple_light(hittable** d_list, material** d_mat_list) {
 __device__
 void scene::device_cornell_box(hittable** d_list, material** d_mat_list) {
 	d_mat_list[0] = new material();
-	*d_mat_list[0] = material::lambertian(color(.65, .05, .05)); //red
+	*d_mat_list[0] = material::lambertian(color(.65f, .05f, .05f)); //red
 	d_mat_list[1] = new material();
-	*d_mat_list[1] = material::lambertian(color(.73, .73, .73)); //white
+	*d_mat_list[1] = material::lambertian(color(.12f, .45f, .15f)); //green
 	d_mat_list[2] = new material();
-	*d_mat_list[2] = material::lambertian(color(.12, .45, .15)); //green
+	*d_mat_list[2] = material::dielectric(dev_flint_glass_b, dev_flint_glass_c);
 	d_mat_list[3] = new material();
-	*d_mat_list[3] = material::emissive(color(1, 1, 1), 5); //light
+	*d_mat_list[3] = material::lambertian(color(.73f, .73f, .73f)); //white
 	d_mat_list[4] = new material();
-	*d_mat_list[4] = material::dielectric(dev_BK7_b, dev_BK7_c); //glass
-	//*d_mat_list[4] = material::dielectric_const(1.5f); //glass
-	d_mat_list[5] = new material();
-	*d_mat_list[5] = material::dielectric_const(1.f / 1.5f); //air
+	*d_mat_list[4] = material::emissive(color(1.f, 1.f, 1.f), 5.f); //light
 
-	d_list[0] = new quad(point3(555, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[2]);
-	d_list[1] = new quad(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[0]);
-	d_list[2] = new quad(point3(343, 554, 332), vec3(-130, 0, 0), vec3(0, 0, -105), d_mat_list[3]); //light
-	d_list[3] = new quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[1]);
-	d_list[4] = new quad(point3(555, 555, 555), vec3(0, 0, -555), vec3(-555, 0, 0), d_mat_list[1]);
-	d_list[5] = new quad(point3(0, 0, 555), vec3(555, 0, 0), vec3(0, 555, 0), d_mat_list[1]);
+	hittable** bottom_faces = &d_list[0];
+	hittable** top_faces = &d_list[2];
+	hittable** back_faces = &d_list[4];
+	hittable** left_faces = &d_list[6];
+	hittable** right_faces = &d_list[8];
+	hittable** light_faces = &d_list[10];
 
-	quad** box_1_sides = reinterpret_cast<quad**>(&d_list[6]);
-	quad** box_2_sides = reinterpret_cast<quad**>(&d_list[12]);
-	//quad** air_sides = reinterpret_cast<quad**>(&d_list[18]);
+	tri_quad bottom = tri_quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[3], bottom_faces);
+	tri_quad back = tri_quad(point3(0, 0, 555.f), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[3], back_faces);
+	tri_quad top = tri_quad(point3(555, 555, 555), vec3(-555, 0, 0), vec3(0, 0, -555), d_mat_list[3], top_faces);
+	tri_quad left = tri_quad(point3(555, 0, 0), vec3(0, 0, 555), vec3(0, 555, 0), d_mat_list[1], left_faces);
+	tri_quad right = tri_quad(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[0], right_faces);
+	tri_quad light = tri_quad(point3(343, 554, 332), vec3(-130, 0, 0), vec3(0, 0, -105), d_mat_list[4], light_faces);
 
-	box box1 = box(point3(0.f, 0.f, 0.f), point3(165.f, 330.f, 165.f), d_mat_list[1], box_1_sides);
-	transform::rotate_box(box1, degrees_to_radians(15.f), transform::AXIS::Y, false);
-	transform::translate_box(box1, vec3(265.f, 0.f, 295.f));
+	/*
+	hittable** box_1_tris = &d_list[12];
+	hittable** box_2_tris = &d_list[24];
+	hittable** air_tris = &d_list[36];
+	hittable** box_3_tris = &d_list[48];
+	*/
 
-	box box2 = box(point3(0.f, 0.f, 0.f), point3(165.f, 165.f, 165.f), d_mat_list[4], box_2_sides);
-	transform::rotate_box(box2, degrees_to_radians(-18.f), transform::AXIS::Y, true);
-	transform::translate_box(box2, vec3(130.f, 0.f, 65.f));
+	tri_box box1 = tri_box(point3(0.f, 0.f, 0.f), point3(165.f, 330.f, 165.f), d_mat_list[3], &d_list[12]);
+	box1.rotate(degrees_to_radians(15.f), transform::AXIS::Y, false);
+	box1.translate(vec3(265.f, 0.f, 295.f));
 
-	//box air = box(min, max, new_dx, new_dy, new_dz, d_mat_list[0], air_sides);
-	//box air = box(box2, d_mat_list[5], air_sides, 25.f);
+	tri_box box2 = tri_box(point3(0.f, 0.f, 0.f), point3(165.f, 165.f, 165.f), d_mat_list[2], &d_list[24]);
+	box2.rotate(degrees_to_radians(-18.f), transform::AXIS::Y, false);
+	box2.translate(vec3(130.f, 0.f, 65.f));
 
-	//transform::rotate_box(air, degrees_to_radians(-18.f), transform::AXIS::Y, false);
-	//transform::translate_box(air, vec3(130.f, 0.f, 65.f));
-
+	tri_box air = tri_box(box2, d_mat_list[2], &d_list[36], 1.f);
+	air.flip_normals();
 }
 
 __device__
@@ -261,28 +264,57 @@ void scene::device_prism_test(hittable** d_list, material** d_mat_list) {
 	d_mat_list[1] = new material();
 	*d_mat_list[1] = material::emissive(color(1, 1, 1), 5); //light
 	d_mat_list[2] = new material();
-	*d_mat_list[2] = material::dielectric_const(1.5f); //glass
+	//*d_mat_list[2] = material::normal_test(color(0.1f, 0.1f, 0.7f));
+	*d_mat_list[2] = material::dielectric(dev_flint_glass_b, dev_flint_glass_c);
 	//*d_mat_list[2] = material::dielectric(dev_flint_glass_b, dev_flint_glass_c); //glass
 	//*d_mat_list[2] = material::dielectric(dev_BK7_b, dev_BK7_c); //glass
 
+	hittable** bottom_faces = &d_list[0];
+	hittable** top_faces = &d_list[2];
+	hittable** back_faces = &d_list[4];
+	hittable** left_faces = &d_list[6];
+	hittable** right_faces = &d_list[8];
+	hittable** light_faces = &d_list[10];
+
+	tri_quad bottom = tri_quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[0], bottom_faces);
+	tri_quad back = tri_quad(point3(0, 0, 555.f), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[0], back_faces);
+	tri_quad top = tri_quad(point3(555, 555, 555), vec3(-555, 0, 0), vec3(0, 0, -555), d_mat_list[0], top_faces);
+	tri_quad left = tri_quad(point3(555, 0, 0), vec3(0, 0, 555), vec3(0, 555, 0), d_mat_list[0], left_faces);
+	tri_quad right = tri_quad(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[0], right_faces);
+
 	//walls
+	/*
 	d_list[0] = new quad(point3(555, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[0]);
 	d_list[1] = new quad(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[0]);
 	d_list[2] = new quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[0]);
 	d_list[3] = new quad(point3(555, 555, 555), vec3(0, 0, -555), vec3(-555, 0, 0), d_mat_list[0]);
 	d_list[4] = new quad(point3(0, 0, 555), vec3(555, 0, 0), vec3(0, 555, 0), d_mat_list[0]);
+	*/
 
 	//light
 	point3 center = vec3(555.f / 2.f, 554.f, 555.f / 2.f);
 	//float width = 130.f;
-	float width = 130.f;
+	float width = 100.f;
 	//float depth = 105.f;
-	float depth = 130.f;
+	float depth = 100.f;
 	float height = 150.f;
 	float margin = 1.5f;
 
 	point3 Q = point3((center.x() + width / 2.f), center.y(), (center.z() + depth / 2.f));
-	d_list[5] = new quad(Q, vec3(-width, 0, 0), vec3(0, 0, -depth), d_mat_list[1]); //light
+	//d_list[5] = new quad(Q, vec3(-width, 0, 0), vec3(0, 0, -depth), d_mat_list[1]); //light
+	tri_quad light = tri_quad(Q, vec3(-width, 0, 0), vec3(0, 0, -depth), d_mat_list[1], light_faces);
+	/*
+	hittable** light_back_sides = &d_list[12];
+	hittable** light_front_sides = &d_list[14];
+	hittable** light_right_sides = &d_list[16];
+	hittable** light_left_sides = &d_list[18];
+
+	tri_quad light_back(point3(Q.x() + margin, Q.y() + 2.f, (Q.z() - margin) - (depth + 2.f * margin)), vec3(0, -height, 0), vec3(-(width + 2.f * margin), 0, 0), d_mat_list[0], light_back_sides);
+	tri_quad light_front(point3(Q.x() + margin, Q.y() + 2.f, Q.z() - margin), vec3(-(width + 2.f * margin), 0, 0), vec3(0, -height, 0), d_mat_list[0], light_front_sides);
+	tri_quad light_right(point3((Q.x() + margin), Q.y(), Q.z() - margin), vec3(0.f, -height, 0), vec3(0.f, 0.f, -(depth + 2.f * margin)), d_mat_list[0], light_right_sides);
+	tri_quad light_left(point3(Q.x() + margin - (width + 2.f * margin), Q.y(), Q.z() - margin), vec3(0.f, 0.f, -(depth + 2.f * margin)), vec3(0.f, -100.f, 0), d_mat_list[0], light_left_sides);
+	*/
+
 	/*
 	d_list[6] = new quad(point3(Q.x()+margin, Q.y()+2.f, (Q.z()-margin) - (depth+2.f*margin)), vec3(0, -height, 0), vec3(-(width+2.f*margin), 0, 0), d_mat_list[0]); //back wall
 	d_list[7] = new quad(point3(Q.x()+margin, Q.y()+2.f, Q.z()-margin), vec3(-(width+2.f*margin), 0, 0), vec3(0, -height, 0), d_mat_list[0]); //front wall
@@ -290,15 +322,38 @@ void scene::device_prism_test(hittable** d_list, material** d_mat_list) {
 	d_list[9] = new quad(point3(Q.x()+margin - (width + 2.f*margin), Q.y(), Q.z() - margin), vec3(0.f, 0.f, -(depth + 2.f * margin)), vec3(0.f, -100.f, 0), d_mat_list[0]); //left wall
 	*/
 
+	hittable** prism_sides = &d_list[12];
+	float prism_width = 165.f;
+	float prism_height = 200.f;
+	//tri_box prism = tri_box(point3(0.f, 0.f, 0.f), point3(165.f, 165.f, 165.f), d_mat_list[2], prism_sides);
+	// Q = (center - width/2.f, center.y - 1.f, center.z - prism_height);
+	// u = (0.f, -prims_width, 0.f)
+	// v = ((prism_width * sqrt(3.f)) / 2.f, prims_width/2.f, 0.f)
+	// w = (0.f, 0.f, prism_height);
+	// 
+	//prism p = prism(point3(0.f, 0.f, 0.f), point3(prism_width, 0.f, 0.f), point3(prism_width / 2.f, 0.f, (prism_width * sqrt(3.f)) / 2.f), point3(0.f, -200.f, 0.f), d_mat_list[2], prism_sides);
+	/*NICE*/ prism p = prism(point3(center.x() - width / 2.f, center.y() - 1.f, center.z() - prism_height / 2.f), point3(0.f, -prism_width, 0.f), point3((prism_width * sqrt(3.f)) / 2.f, -prism_width / 2.f, 0.f), point3(0.f, 0.f, 200.f), d_mat_list[2], prism_sides);
+	//prism p = prism(point3(center.x() - width / 2.f, center.y() - 1.f, center.z() - prism_height / 2.f), point3(0.f, -prism_width, 0.f), point3((prism_width * sqrt(3.f)) / 2.f, -prism_width / 2.f, 0.f), point3(0.f, 0.f, 200.f), d_mat_list[2], prism_sides);
+	p.rotate(degrees_to_radians(10.f), transform::AXIS::Y, true);
+	
+	/*
+	p.rotate(degrees_to_radians(90.f), transform::AXIS::X, false);
+	p.rotate(degrees_to_radians(-30.f), transform::AXIS::Z, false);
+	p.rotate(degrees_to_radians(10.f), transform::AXIS::Y, false);
+	p.translate(vec3(277.5f - (prism_width/2.f), 0.f , 0.f), false);
+	//p.rotate(degrees_to_radians(-45.f), transform::AXIS::Y, false);
+	
+	p.translate(vec3(0.f, 450.f, 277.5f), true);
+	*/
+	
+	
 
-
-	quad** prism_sides = reinterpret_cast<quad**>(&d_list[6]);
-
-	box prism = box(point3(0.f, 0.f, 0.f), point3(165.f, 165.f, 165.f), d_mat_list[2], prism_sides);
+	/*
 	transform::translate_box(prism, vec3(343.f - width - (165.f - width) / 2.f, 553.f - (sqrt(2.0f) * 165.f), 332.f - depth - (165.f - depth) / 2.f), false);
 	transform::rotate_box(prism, degrees_to_radians(-45.f), transform::AXIS::Y, false);
 	transform::rotate_box(prism, degrees_to_radians(-90.f), transform::AXIS::X, false);
 	transform::translate_box(prism, vec3(-50.f, 0.f, 0.f), true);
+	*/
 
 }
 
@@ -404,12 +459,13 @@ void scene::init_world_parameters(uint world_selector, int* world_size_ptr, int*
 
 	case CORNELL:
 		//cornell
-		*world_size_ptr = 6 + 6 + 6;
-		*n_materials_ptr = 4 + 2;
+		*world_size_ptr = 12 + 12 + 12 + 12;
+		*n_materials_ptr = 5;
 		break;
+
 	case PRISM:
 		//prism test
-		*world_size_ptr = 5 + 1 + 6; //walls + light +light walls + prism
+		*world_size_ptr = 10 + 2 + 8; //walls + light + prism
 		*n_materials_ptr = 3; //white + emission + dielectric
 		break;
 
