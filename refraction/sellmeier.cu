@@ -18,6 +18,6 @@ float sellmeier_index(const float b[3], const float c[3], float lambda) {
 		(b[1] * lambda_squared) / (lambda_squared - c[1]) +
 		(b[2] * lambda_squared) / (lambda_squared - c[2]);
 
-	index = sqrt(index);
+	index = sqrtf(index);
 	return index;
 }
