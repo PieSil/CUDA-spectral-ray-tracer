@@ -33,6 +33,7 @@
 #include "tri_quad.cuh"
 #include "prism.cuh"
 #include "tri_box.cuh"
+#include "pyramid.cuh"
 #include "rendering.cuh"
 #include "log_context.h"
 #include "params.h"

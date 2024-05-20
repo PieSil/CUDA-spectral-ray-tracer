@@ -222,6 +222,10 @@ void scene::device_cornell_box(hittable** d_list, material** d_mat_list) {
 	*d_mat_list[3] = material::lambertian(color(.73f, .73f, .73f)); //white
 	d_mat_list[4] = new material();
 	*d_mat_list[4] = material::emissive(color(1.f, 1.f, 1.f), 5.f); //light
+	d_mat_list[5] = new material();
+	*d_mat_list[5] = material::metallic(color(.5f, .5f, .5f), 0.3f); //metal
+	d_mat_list[6] = new material();
+	*d_mat_list[6] = material::lambertian(color(.12f, .15f, .45f)); //blue
 
 	hittable** bottom_faces = &d_list[0];
 	hittable** top_faces = &d_list[2];
@@ -230,12 +234,22 @@ void scene::device_cornell_box(hittable** d_list, material** d_mat_list) {
 	hittable** right_faces = &d_list[8];
 	hittable** light_faces = &d_list[10];
 
+	//walls
 	tri_quad bottom = tri_quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[3], bottom_faces);
 	tri_quad back = tri_quad(point3(0, 0, 555.f), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[3], back_faces);
 	tri_quad top = tri_quad(point3(555, 555, 555), vec3(-555, 0, 0), vec3(0, 0, -555), d_mat_list[3], top_faces);
 	tri_quad left = tri_quad(point3(555, 0, 0), vec3(0, 0, 555), vec3(0, 555, 0), d_mat_list[1], left_faces);
-	tri_quad right = tri_quad(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[0], right_faces);
-	tri_quad light = tri_quad(point3(343, 554, 332), vec3(-130, 0, 0), vec3(0, 0, -105), d_mat_list[4], light_faces);
+	tri_quad right = tri_quad(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[6], right_faces);
+
+	//light
+	point3 center = vec3(555.f / 2.f, 554.f, 555.f / 2.f);
+	float width = 100.f;
+	float depth = 100.f;
+	float height = 150.f;
+	float margin = 1.5f;
+	point3 Q = point3((center.x() + width / 2.f), center.y(), (center.z() + depth / 2.f));
+	tri_quad light = tri_quad(Q, vec3(-width, 0, 0), vec3(0, 0, -depth), d_mat_list[4], light_faces);
+	//tri_quad light = tri_quad(point3(343, 554, 332), vec3(-130, 0, 0), vec3(0, 0, -105), d_mat_list[4], light_faces);
 
 	/*
 	hittable** box_1_tris = &d_list[12];
@@ -244,16 +258,22 @@ void scene::device_cornell_box(hittable** d_list, material** d_mat_list) {
 	hittable** box_3_tris = &d_list[48];
 	*/
 
-	tri_box box1 = tri_box(point3(0.f, 0.f, 0.f), point3(165.f, 330.f, 165.f), d_mat_list[3], &d_list[12]);
-	box1.rotate(degrees_to_radians(15.f), transform::AXIS::Y, false);
+	//others
+	tri_box box1 = tri_box(point3(0.f, 0.f, 0.f), point3(165.f, 330.f, 165.f), d_mat_list[5], &d_list[12]);
+	box1.rotate(degrees_to_radians(25.f), transform::AXIS::Y, false);
 	box1.translate(vec3(265.f, 0.f, 295.f));
 
-	tri_box box2 = tri_box(point3(0.f, 0.f, 0.f), point3(165.f, 165.f, 165.f), d_mat_list[2], &d_list[24]);
+	
+	tri_box box2 = tri_box(point3(0.f, 0.f, 0.f), point3(165.f, 165.f, 165.f), d_mat_list[0], &d_list[24]);
 	box2.rotate(degrees_to_radians(-18.f), transform::AXIS::Y, false);
 	box2.translate(vec3(130.f, 0.f, 65.f));
+	
 
-	tri_box air = tri_box(box2, d_mat_list[2], &d_list[36], 1.f);
-	air.flip_normals();
+
+	pyramid pyr(point3(165.f, 166.f, 0.f), vec3(-165.f, 0.f, 0.f), vec3(0.f, 0.f, 165.f), vec3(0.f, 165.f, 0.f), d_mat_list[2], &d_list[36]);
+	pyr.rotate(degrees_to_radians(-18.f), transform::AXIS::Y, false);
+	pyr.translate(vec3(130.f, 0.f, 65.f));
+
 }
 
 __device__
@@ -374,7 +394,7 @@ void scene::device_tri_world(hittable** d_list, material** d_mat_list) {
 	*d_mat_list[3] = material::lambertian(color(.75f, .75f, .75f)); //white
 	d_mat_list[4] = new material();
 	//*d_mat_list[3] = material::lambertian(color(.75f, .75f, .75f)); //white
-	*d_mat_list[4] = material::emissive(color(1.f, 1.f, 1.f), 5.f); //light
+	*d_mat_list[4] = material::emissive(color(1.f, 1.f, 1.f), 8.f); //light
 
 	hittable** bottom_faces = &d_list[0];
 	hittable** top_faces = &d_list[2];
@@ -459,8 +479,8 @@ void scene::init_world_parameters(uint world_selector, int* world_size_ptr, int*
 
 	case CORNELL:
 		//cornell
-		*world_size_ptr = 12 + 12 + 12 + 12;
-		*n_materials_ptr = 5;
+		*world_size_ptr = 10 + 2 + 12 + 12 + 6; //walls + light + box1 + box2 + pyramid + prism
+		*n_materials_ptr = 7;
 		break;
 
 	case PRISM:
