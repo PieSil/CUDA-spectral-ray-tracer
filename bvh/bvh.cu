@@ -5,18 +5,18 @@
 #include "bvh.cuh"
 
 __device__
-void swap(hittable** src_objects, int a, int b) {
+void swap(tri** src_objects, int a, int b) {
     auto t = src_objects[a];
     src_objects[a] = src_objects[b];
     src_objects[b] = t;
 }
 
 __device__
-int partition(hittable** src_objects, int l, int h, bool(*compare)(const hittable*, const hittable*)) {
+int partition(tri** src_objects, int l, int h, bool(*compare)(const tri*, const tri*)) {
     if(l == h)
         return l;
 
-    hittable* x = src_objects[h];
+    tri* x = src_objects[h];
     int i = (l - 1);
 
     for (int j = l; j < h; j++) {
@@ -31,7 +31,7 @@ int partition(hittable** src_objects, int l, int h, bool(*compare)(const hittabl
 }
 
 __device__
-void quicksort_hittables(hittable** src_objects, int start, int end, bool(*compare)(const hittable*, const hittable*)) {
+void quicksort_primitives(tri** src_objects, int start, int end, bool(*compare)(const tri*, const tri*)) {
     // Create an auxiliary stack
     auto stack = new int[end - start + 1];
 
@@ -73,7 +73,7 @@ void quicksort_hittables(hittable** src_objects, int start, int end, bool(*compa
 __device__
 bool bvh_node::hit(const ray &r, float min, float max, hit_record &rec) const {
 
-    return hit_volume->hit(r, min, max, rec);
+    return is_leaf ?  primitive->hit(r, min, max, rec) : bbox->hit(r, min, max);
 
     /*if(!hit_volume->hit(r, ray_t, rec))
         return false;
@@ -155,7 +155,7 @@ bool bvh::hit(const ray &r, float min, float max, hit_record &rec) const {
     return hit_anything;
 }
 
-__device__ bool bvh::build_bvh(hittable** src_objects, size_t list_size, curandState* local_rand_state) {
+__device__ bool bvh::build_bvh(tri** src_objects, size_t list_size, curandState* local_rand_state) {
 
     //dynamic allocation, I do not care about performance during BVH construction anyway since it is only built once
     auto stack = new stack_item[MAX_DEPTH];
@@ -186,7 +186,8 @@ __device__ bool bvh::build_bvh(hittable** src_objects, size_t list_size, curandS
                 node->is_leaf = true;
                 node->left = nullptr;
                 node->right = nullptr;
-                node->hit_volume = src_objects[current.start];
+                node->bbox = nullptr;
+                node->primitive = src_objects[current.start];
             } else {
                 int axis = cuda_random_int(0, 2, local_rand_state);
                 auto comparator = (axis == 0) ? box_x_compare: ((axis == 1) ? box_y_compare: box_z_compare);
@@ -197,25 +198,25 @@ __device__ bool bvh::build_bvh(hittable** src_objects, size_t list_size, curandS
                     if (comparator(src_objects[current.start], src_objects[current.start + 1])) {
                         //left
                         node->left = new bvh_node(true);
-                        node->left->hit_volume = src_objects[current.start];
+                        node->left->primitive = src_objects[current.start];
 
                         //right
                         node->right = new bvh_node(true);
-                        node->right->hit_volume = src_objects[current.start + 1];
+                        node->right->primitive = src_objects[current.start + 1];
                     } else {
                         //left
                         node->left = new bvh_node(true);
-                        node->left->hit_volume = src_objects[current.start+1];
+                        node->left->primitive = src_objects[current.start+1];
 
                         //right
                         node->right = new bvh_node(true);
-                        node->right->hit_volume = src_objects[current.start];
+                        node->right->primitive = src_objects[current.start];
                     }
 
                 } else {
 
                     //sort hittables based on selected axis
-                    quicksort_hittables(src_objects, int(current.start), int(current.end-1), comparator);
+                    quicksort_primitives(src_objects, int(current.start), int(current.end - 1), comparator);
 
                     //more than 2 nodes, create left and right nodes, connect them to current node and push them onto stack
                     node->left = new bvh_node(false);
@@ -279,7 +280,7 @@ __device__ void bvh::build_nodes_bboxes() {
             //peek element on tos
             bvh_node* top_node = node_stack[tos];
 
-            if (top_node->right->is_leaf || top_node->right->hit_volume != nullptr) {
+            if (top_node->right->is_leaf || top_node->right->bbox != nullptr) {
                 //compute bbox based on children
                 bbox_created++;
                 top_node->create_bbox();

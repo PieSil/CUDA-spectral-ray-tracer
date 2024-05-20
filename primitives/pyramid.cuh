@@ -6,7 +6,7 @@
 class pyramid {
 public:
 	__device__
-	pyramid(point3 Q, vec3 u, vec3 v, vec3 w, material* mats[5], hittable** tris, const bool defer_init = false) {
+	pyramid(point3 Q, vec3 u, vec3 v, vec3 w, material* mats[5], tri** tris, const bool defer_init = false) {
 		base = tri_quad(Q, u, v, mats[0], &tris[0], defer_init);
 		point3 top = base_center() + w;
 		point3 v0 = Q;
@@ -27,7 +27,7 @@ public:
 	}
 
 	__device__
-	pyramid(point3 Q, vec3 u, vec3 v, vec3 w, material* m, hittable** tris, const bool defer_init = false) {
+	pyramid(point3 Q, vec3 u, vec3 v, vec3 w, material* m, tri** tris, const bool defer_init = false) {
 		base = tri_quad(Q, u, v, m, &tris[0], defer_init);
 		point3 top = base_center() + w;
 		point3 v0 = Q;
@@ -55,10 +55,10 @@ public:
 
 	__device__
 	void flip_normals() {
-		static_cast<tri*>(sides[0])->flip_normals();
-		static_cast<tri*>(sides[1])->flip_normals();
-		static_cast<tri*>(sides[2])->flip_normals();
-		static_cast<tri*>(sides[3])->flip_normals();
+		sides[0]->flip_normals();
+		sides[1]->flip_normals();
+		sides[2]->flip_normals();
+		sides[3]->flip_normals();
 
 		base.flip_normals();
 	}
@@ -73,16 +73,16 @@ public:
 private:
 	__device__
 	void init() {
-		static_cast<tri*>(sides[0])->init();
-		static_cast<tri*>(sides[1])->init();
-		static_cast<tri*>(sides[2])->init();
-		static_cast<tri*>(sides[3])->init();
+		sides[0]->init();
+		sides[1]->init();
+		sides[2]->init();
+		sides[3]->init();
 
 		base.init();
 	}
 
 	tri_quad base;
-	hittable* sides[4];
+	tri* sides[4];
 };
 
 #endif

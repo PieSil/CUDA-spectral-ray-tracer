@@ -12,15 +12,11 @@ using namespace std;
 
 typedef unsigned int uint;
 
-#define RANDOM 0
-#define QUADS 1
-#define SIMPLE_LIGHT 2
-#define CORNELL 3
-#define PRISM 4
-#define TRIS 5
-#define SPHERES 6
+#define CORNELL 0
+#define PRISM 1
+#define TRIS 2
 
-static const string sceneIdToStr[] = { "Random World", "Quad World", "Simple Light", "Cornell Box Quads", "Prism World", "Triangles", "Spheres" };
+static const string sceneIdToStr[] = {"Cornell Box", "Prism World", "Triangles"};
 
 class parameters {
 public:
@@ -205,7 +201,7 @@ private:
 	string log_subdir = "";
 
 	//world
-	uint scene = TRIS;
+	uint scene = CORNELL;
 
 	//image
 	uint xres = 600;
@@ -243,7 +239,7 @@ public:
 		/*
 		 * -t/--title: name of the image file (without extension, forced to .bmp for now
 		 * -lsub/--log-subdir: subdirectory where to store log file (relative to ./logs/)
-		 * -s/--scene: id of selected scene as uint value, default: 5 (for now)
+		 * -s/--scene: id of selected scene as uint value, default: 0 (for now)
 		 * -xr/--xres: image resolution along x, default: 600
 		 * -yr/--yres: NOT MANAGED, determined by xres and ar
 		 * -ar/--aspect-ratio: aspect ratio of the scene, expressed as a single value or two values separated by /, default: 1.0

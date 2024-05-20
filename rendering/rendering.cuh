@@ -7,7 +7,6 @@
 
 #include "cuda_utility.cuh"
 #include "color.cuh"
-#include "hittable.cuh"
 #include "bvh.cuh"
 #include "io.cuh"
 #include "camera.cuh"

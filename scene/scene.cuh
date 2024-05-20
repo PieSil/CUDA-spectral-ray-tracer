@@ -23,8 +23,6 @@
 
 #include "cuda_utility.cuh"
 #include "bvh.cuh"
-#include "sphere.cuh"
-#include "quad.cuh"
 #include "camera_builder.cuh"
 #include "material.cuh"
 #include "transform.cuh"
@@ -40,133 +38,150 @@
 
 namespace scene {
 
-    __device__
-    void device_random_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials);
+	/*
+	__device__
+	void device_random_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials);
+	*/
 
-    __device__
-    void device_quad_world(hittable **d_list, material **d_mat_list);
+	/*
+	__device__
+	void device_quad_world(hittable **d_list, material **d_mat_list);
+	*/
 
-    __device__
-    void device_simple_light(hittable **d_list, material **d_mat_list);
+	/*
+	__device__
+	void device_simple_light(hittable **d_list, material **d_mat_list);
+	 */
 
-    __device__
-    void device_cornell_box(hittable **d_list, material **d_mat_list);
+	__device__
+		void device_cornell_box(tri** d_list, material** d_mat_list);
 
-    __device__
-    void device_prism_test(hittable** d_list, material** d_mat_list);
+	__device__
+		void device_prism_test(tri** d_list, material** d_mat_list);
 
-    __device__
-    void device_tri_world(hittable** d_list, material** d_mat_list);
+	__device__
+		void device_tri_world(tri** d_list, material** d_mat_list);
 
-    __device__
-    void device_3_spheres(hittable** d_list, material** d_mat_list);
+	/*
+	__device__
+	void device_3_spheres(tri **d_list, material** d_mat_list);
+	 */
 
-    __host__
-    void init_world_parameters(uint world_selector, int *world_size_ptr, int *n_materials_ptr);
+	__host__
+		void init_world_parameters(uint world_selector, int* world_size_ptr, int* n_materials_ptr);
 
-    __host__
-    camera_builder random_world_cam_builder();
+	/*
+	__host__
+		camera_builder random_world_cam_builder();
+	*/
 
-    __host__
-    camera_builder quad_world_camera_builder();
+	/*
+	__host__
+		camera_builder quad_world_camera_builder();
+	*/
 
-    __host__
-    camera_builder simple_light_camera_builder();
+	/*
+	__host__
+		camera_builder simple_light_camera_builder();
+	*/
 
-    __host__
-    camera_builder cornell_box_camera_builder();
+	__host__
+		camera_builder cornell_box_camera_builder();
 
-    __host__
-    camera_builder prism_test_camera_builder();
+	__host__
+		camera_builder prism_test_camera_builder();
 
-    __host__
-    camera_builder tris_camera_builder();
+	
+	__host__
+		camera_builder tris_camera_builder();
+	
+	/*
+	__host__
+		camera_builder spheres_camera_builder();
+	*/
 
-    __host__
-    camera_builder spheres_camera_builder();
+	__host__
+		bool create_bvh(tri** d_world, size_t world_size, bvh** d_bvh);
 
-    __host__
-    bool create_bvh(hittable **d_world, size_t world_size, bvh **d_bvh);
+	__host__
+		void create_world(uint selected_world, tri** d_list, material** d_mat_list, int* world_size, int* n_materials, float* dev_sRGBToSpectrum_Data);
 
-    __host__
-    void create_world(uint selected_world, hittable **d_list, material **d_mat_list, int *world_size, int *n_materials, float* dev_sRGBToSpectrum_Data);
+	__host__
+		void free_world(tri** d_list, bvh** dev_bvh, material** d_mat_list, int world_size,
+			int n_materials);
 
-    __host__
-    void free_world(hittable **d_list, bvh **dev_bvh, material **d_mat_list, int world_size,
-                    int n_materials);
+	struct result {
+		bool success;
+		string msg;
+	};
 
-    struct result {
-        bool success;
-        string msg;
-    };
+	class scene_manager {
+	public:
+		__host__
+			explicit scene_manager() {
+			cam_inited = false;
+			world_inited = false;
+			selected_world = param_manager::getInstance()->getParams().getSceneId();
+			init_camera();
+			world_result = init_world();
+		};
 
-    class scene_manager {
-    public:
-        __host__
-        explicit scene_manager() {
-            cam_inited = false;
-            world_inited = false;
-            selected_world = param_manager::getInstance()->getParams().getSceneId();
-            init_camera();
-            world_result = init_world();
-        };
+		__host__
+			virtual ~scene_manager() {
+			destroy_world();
+		}
 
-        __host__
-        virtual ~scene_manager() {
-            destroy_world();
-        }
+		[[nodiscard]] result getResult() const {
+			return world_result;
+		}
 
-        [[nodiscard]] result getResult() const {
-            return world_result;
-        }
+		const uint img_width() const {
+			return cam.getImageWidth();
+		}
 
-        const uint img_width() const {
-            return cam.getImageWidth();
-        }
+		const uint img_height() const {
+			return cam.getImageHeight();
+		}
 
-        const uint img_height() const {
-            return cam.getImageHeight();
-        }
+		bvh** getWorld() {
+			if (world_inited)
+				return dev_bvh;
+			else
+				return nullptr;
+		}
 
-        bvh** getWorld() {
-            if (world_inited)
-                return dev_bvh;
-            else
-                return nullptr;
-        }
-
-        camera* getCamPtr() {
-            if (cam_inited)
-                return &cam;
-            else
-                return nullptr;
-        }
+		camera* getCamPtr() {
+			if (cam_inited)
+				return &cam;
+			else
+				return nullptr;
+		}
 
 
-    private:
-        __host__
-        const result init_world();
+	private:
+		__host__
+			const result init_world();
 
-        __host__
-        void init_camera();
+		__host__
+			void init_camera();
 
-        __host__
-        void destroy_world();
+		__host__
+			void destroy_world();
 
-        int* h_n_materials_ptr = new int;
-        int* h_world_size_ptr = new int;
+		int* h_n_materials_ptr = new int;
+		int* h_world_size_ptr = new int;
 
-        hittable **dev_world;
-        material **dev_mat_list;
-        bvh **dev_bvh;
+		tri** dev_world;
+		material** dev_mat_list;
+		bvh** dev_bvh;
 
-        camera cam;
-        bool cam_inited = false;
-        bool world_inited = false;
+		camera cam;
+		bool cam_inited = false;
+		bool world_inited = false;
 
-        uint selected_world;
-        result world_result;
-    };
+		uint selected_world;
+		result world_result;
+	};
 }
 
 #endif //SPECTRAL_RT_PROJECT_SCENE_CUH

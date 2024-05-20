@@ -6,7 +6,7 @@
 #define RTWEEKEND_CUDA_BVH_CUH
 
 #include <algorithm>
-#include "hittable.cuh"
+#include "tri.cuh"
 #include "cuda_utility.cuh"
 
 #define MAX_DEPTH 64
@@ -20,8 +20,8 @@
  * https://raytracing.github.io/books/RayTracingTheNextWeek.html#boundingvolumehierarchies/thebvhnodeclass
  */
 
-
-class hittable_bbox : public hittable {
+/*
+class hittable_bbox {
     //a wrapper for the aabb class that allows to treat it as a hittable
 public:
 
@@ -29,20 +29,21 @@ public:
     explicit hittable_bbox(const aabb &bbox) : bbox(bbox) {}
 
     __device__
-    bool hit(const ray &r, float min, float max, hit_record &rec) const override {
+    bool hit(const ray &r, float min, float max, hit_record &rec) const {
         return bbox.hit(r, min, max);
     }
 
     __host__ __device__
-    aabb bounding_box() const override {
+    aabb bounding_box() const {
         return bbox;
     }
 
 private:
     aabb bbox;
 };
+ */
 
-class bvh_node : public hittable {
+class bvh_node {
 
 public:
 
@@ -50,42 +51,42 @@ public:
     explicit bvh_node(bool is_leaf) : is_leaf(is_leaf) {
         left = nullptr;
         right = nullptr;
-        hit_volume = nullptr;
+        bbox = nullptr;
     }
 
     __device__
-    explicit bvh_node(hittable* h) : hit_volume(h) {
+    explicit bvh_node(tri* t) : primitive(t) {
         is_leaf = true;
         left = nullptr;
         right = nullptr;
     }
 
     __device__
-    bool hit(const ray &r, float min, float max, hit_record &rec) const override;
+    bool hit(const ray &r, float min, float max, hit_record &rec) const;
 
     __host__ __device__
-    aabb bounding_box() const override {
-        return hit_volume->bounding_box();
+    aabb bounding_box() const {
+        return is_leaf ? primitive->bounding_box() : *bbox;
     }
 
     __device__
     void create_bbox() {
         if (left != nullptr && right != nullptr)
-            hit_volume = new hittable_bbox(aabb(left->bounding_box(), right->bounding_box()));
+            bbox = new aabb(left->bounding_box(), right->bounding_box());
 
         else if (left != nullptr) {
-            hit_volume = new hittable_bbox(left->bounding_box());
+            bbox = new aabb(left->bounding_box());
         }
         else if (right != nullptr) {
-            hit_volume = new hittable_bbox(right->bounding_box());
+            bbox = new aabb(right->bounding_box());
         }
 
     }
 
     __host__ __device__
-    ~bvh_node() override {
+    ~bvh_node() {
         if (!is_leaf)
-            delete hit_volume;
+            delete bbox;
 
         delete left;
         delete right;
@@ -94,7 +95,8 @@ public:
     bvh_node* left;
     bvh_node* right;
     bool is_leaf;
-    hittable* hit_volume;
+    tri* primitive;
+    aabb* bbox;
 
 };
 
@@ -111,10 +113,10 @@ struct stack_item {
     size_t end;
 };
 
-class bvh : public hittable {
+class bvh {
 public:
     __device__
-    bvh(hittable** src_objects, size_t list_size, curandState* local_rand_state) {
+    bvh(tri** src_objects, size_t list_size, curandState* local_rand_state) {
         global_bbox = aabb(); //empty bbox
         if (list_size > 0 && build_bvh(src_objects, list_size, local_rand_state)) {
             build_nodes_bboxes();
@@ -130,18 +132,16 @@ public:
 //    }
 
     __host__ __device__
-    ~bvh() override {
+    ~bvh() {
         delete root;
         //delete[] nodes;
     }
 
     __device__
-    bool build_bvh(hittable** src_objects, size_t list_size, curandState* local_rand_state);
+    bool build_bvh(tri** src_objects, size_t list_size, curandState* local_rand_state);
 
     __device__
     void build_nodes_bboxes();
-
-
 
     static __device__
     bvh_node* get_left_child(bvh_node* node) {
@@ -154,32 +154,32 @@ public:
     }
 
     __device__
-    bool hit(const ray &r, float min, float max, hit_record &rec) const override;
+    bool hit(const ray &r, float min, float max, hit_record &rec) const;
 
     __host__ __device__
-    aabb bounding_box() const override {
+    aabb bounding_box() const {
         return global_bbox;
     }
 
     __device__
     static bool box_compare(
-    const hittable* a, const hittable* b, int axis_index) {
-        return a->bounding_box().center()[axis_index] < b->bounding_box().center()[axis_index];
-            //return a->bounding_box().axis(axis_index).min < b->bounding_box().axis(axis_index).min;
+    const tri* a, const tri* b, int axis_index) {
+       // return a->bounding_box().center()[axis_index] < b->bounding_box().center()[axis_index];
+            return a->bounding_box().axis(axis_index).min < b->bounding_box().axis(axis_index).min;
     }
 
     __device__
-    static bool box_x_compare (const hittable* a, const hittable* b) {
+    static bool box_x_compare (const tri* a, const tri* b) {
         return box_compare(a, b, 0);
     }
 
     __device__
-    static bool box_y_compare (const hittable* a, const hittable* b) {
+    static bool box_y_compare (const tri* a, const tri* b) {
         return box_compare(a, b, 1);
     }
 
     __device__
-    static bool box_z_compare (const hittable* a, const hittable* b) {
+    static bool box_z_compare (const tri* a, const tri* b) {
         return box_compare(a, b, 2);
     }
 

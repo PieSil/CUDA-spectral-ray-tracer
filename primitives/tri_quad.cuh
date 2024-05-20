@@ -11,7 +11,7 @@ public:
 	tri_quad() {}
 
 	__device__
-	tri_quad(const point3& Q, const vec3& u, const vec3& v, material* m, hittable** _halves, bool defer_init = false) {
+	tri_quad(const point3& Q, const vec3& u, const vec3& v, material* m, tri** _halves, bool defer_init = false) {
 
 		_halves[0] = new tri(Q, u, v, m, defer_init, CreationMode::VECTORS);
 		_halves[1] = new tri(Q+u+v, -u, -v, m, defer_init, CreationMode::VECTORS);
@@ -21,23 +21,23 @@ public:
 
 	__device__
 	void init() {
-		static_cast<tri*>(halves[0])->init();
-		static_cast<tri*>(halves[1])->init();
+		halves[0]->init();
+		halves[1]->init();
 	}
 
 	__device__
 	const vec3 u() const {
-		return static_cast<tri*>(halves[0])->v[1] - static_cast<tri*>(halves[0])->v[0];
+		return halves[0]->v[1] - halves[0]->v[0];
 	}
 
 	__device__
 	const vec3 v() const {
-		return static_cast<tri*>(halves[0])->v[2] - static_cast<tri*>(halves[0])->v[0];
+		return halves[0]->v[2] - halves[0]->v[0];
 	}
 
 	__device__
 	const vec3 Q() const {
-		return static_cast<tri*>(halves[0])->v[0];
+		return halves[0]->v[0];
 	}
 
 	__device__
@@ -47,8 +47,8 @@ public:
 
 	__device__
 	void flip_normals() {
-		static_cast<tri*>(halves[0])->flip_normals();
-		static_cast<tri*>(halves[1])->flip_normals();
+		halves[0]->flip_normals();
+		halves[1]->flip_normals();
 	}
 
 	__device__
@@ -57,7 +57,7 @@ public:
 	__device__
 	void rotate(const float theta, const transform::AXIS ax, const bool reinit = true, const bool local = true);
 
-	hittable* halves[2]; //the tris where the two faces of the quad are stored in
+	tri* halves[2]; //the tris where the two faces of the quad are stored in
 };
 
 #endif 

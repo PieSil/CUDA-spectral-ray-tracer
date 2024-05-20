@@ -7,7 +7,7 @@
 
 
 #include "color.cuh"
-#include "hittable.cuh"
+#include "hit_record.cuh"
 #include "color_to_spectrum.cuh"
 #include "sellmeier.cuh"
 

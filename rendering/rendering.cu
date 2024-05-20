@@ -4,8 +4,6 @@
 
 #include "rendering.cuh"
 
-//TODO: fix comments
-
 __device__
 void renderer::ray_bounce(ray &r, const float *background_emittance_spectrum, bvh** bvh, const uint bounce_limit, curandState *local_rand_state) {
 

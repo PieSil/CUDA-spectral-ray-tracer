@@ -2,10 +2,10 @@
 
 __device__
 void pyramid::translate(const vec3 dir, const bool reinit) {
-	static_cast<tri*>(sides[0])->translate(dir, reinit);
-	static_cast<tri*>(sides[1])->translate(dir, reinit);
-	static_cast<tri*>(sides[2])->translate(dir, reinit);
-	static_cast<tri*>(sides[3])->translate(dir, reinit);
+	sides[0]->translate(dir, reinit);
+	sides[1]->translate(dir, reinit);
+	sides[2]->translate(dir, reinit);
+	sides[3]->translate(dir, reinit);
 
 	base.translate(dir, reinit);
 
@@ -20,10 +20,10 @@ void pyramid::rotate(const float theta, const transform::AXIS ax, const bool rei
 		translate(-center, false);
 	}
 
-	static_cast<tri*>(sides[0])->rotate(theta, ax, false, false);
-	static_cast<tri*>(sides[1])->rotate(theta, ax, false, false);
-	static_cast<tri*>(sides[2])->rotate(theta, ax, false, false);
-	static_cast<tri*>(sides[3])->rotate(theta, ax, false, false);
+	sides[0]->rotate(theta, ax, false, false);
+	sides[1]->rotate(theta, ax, false, false);
+	sides[2]->rotate(theta, ax, false, false);
+	sides[3]->rotate(theta, ax, false, false);
 
 	base.rotate(theta, ax, false, false);
 

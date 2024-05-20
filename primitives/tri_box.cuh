@@ -8,7 +8,7 @@ class tri_box {
 public:
 
     __device__
-    tri_box(const point3& a, const point3& b, material* mat, hittable** tris, const bool defer_init = false) {
+    tri_box(const point3& a, const point3& b, material* mat, tri** tris, const bool defer_init = false) {
         point3 min = point3(fmin(a.x(), b.x()), fmin(a.y(), b.y()), fmin(a.z(), b.z()));
         point3 max = point3(fmax(a.x(), b.x()), fmax(a.y(), b.y()), fmax(a.z(), b.z()));
 
@@ -26,7 +26,7 @@ public:
     }
 
     __device__
-    tri_box(const point3 center, vec3 width_vec, vec3 height_vec, vec3 depth_vec, material* mat, hittable** tris, const bool defer_init = false) {
+    tri_box(const point3 center, vec3 width_vec, vec3 height_vec, vec3 depth_vec, material* mat, tri** tris, const bool defer_init = false) {
         vec3 half_sum = (width_vec + height_vec + depth_vec) / 2.0f;
         point3 min = center - half_sum;
 
@@ -43,7 +43,7 @@ public:
     }
 
     __device__
-    tri_box(tri_box outer, material* mat, hittable** tris, const float offset = 0.0f, const bool defer_init = false) {
+    tri_box(tri_box outer, material* mat, tri** tris, const float offset = 0.0f, const bool defer_init = false) {
 
         vec3 outer_width_vec = outer.getWidthVec();
         vec3 outer_height_vec = outer.getHeightVec();

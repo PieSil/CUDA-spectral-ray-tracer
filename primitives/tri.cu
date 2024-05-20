@@ -118,6 +118,7 @@ void tri::rotate(float theta, transform::AXIS ax, bool reinit, bool local) {
         init();
 }
 
+__device__
 const bool tri::is_interior_faster(const point3 p) const {
     float a1 = double_signed_area_2D(p, v[0], v[1]);
     float a2 = double_signed_area_2D(p, v[1], v[2]);

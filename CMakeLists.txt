@@ -32,14 +32,12 @@ add_executable(spectral-rt-project
         utils/cuda_utility.cu
         color/color.cu
         utils/srgb_to_spectrum.cu
-        primitives/sphere.cu
         materials/material.cu
         bvh/aabb.cu
         bvh/bvh.cu
         rendering/rendering.cu
         rendering/camera.cu
         scene/scene.cu
-        primitives/quad.cu
         primitives/transform.cu
         refraction/sellmeier.cu
         primitives/tri.cu
@@ -51,7 +49,8 @@ add_executable(spectral-rt-project
         image/image.cpp
         rendering/render_manager.cu
         _log_/log_context.cpp
-        io/params.cpp)
+        io/params.cpp
+        primitives/hit_record.cuh)
 
 set_target_properties(spectral-rt-project PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON

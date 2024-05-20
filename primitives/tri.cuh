@@ -3,15 +3,15 @@
 #ifndef SPECTRAL_RT_PROJECT_TRI_CUH
 #define SPECTRAL_RT_PROJECT_TRI_CUH
 
-#include "hittable.cuh"
+#include "hit_record.cuh"
 #include "materials/material.cuh"
 #include "transform.cuh"
 
 enum AAPlane {
     NONE,  //no special trait
-    XY,    //triangle lays on a plane parallel to the XY plane
-    YZ,    //triangle lays on a plane parallel to the YZ plane
-    XZ     //triangle lays on a plane parallel to the XZ plane
+    XY,    //triangle lies on a plane parallel to the XY plane
+    YZ,    //triangle lies on a plane parallel to the YZ plane
+    XZ     //triangle lies on a plane parallel to the XZ plane
 };
 
 enum CreationMode {
@@ -19,7 +19,7 @@ enum CreationMode {
     VECTORS
 };
 
-class tri : public hittable {
+class tri {
 public:
 
     __device__
@@ -51,18 +51,18 @@ public:
     void init();
 
     __host__ __device__
-    virtual void set_bounding_box() {
+    void set_bounding_box() {
         bbox = aabb(v[0], v[1], v[2]).pad();
         //bbox = aabb(v[0], v[0] + v[1] - v[0] + v[2] - v[0]).pad();
     }
 
     __host__ __device__
-    aabb bounding_box() const override {
+    aabb bounding_box() const {
         return bbox;
     }
 
     __device__
-    bool hit(const ray& r, float min, float max, hit_record& rec) const override;
+    bool hit(const ray& r, float min, float max, hit_record& rec) const;
 
     __device__
     void translate(const vec3 dir, const bool reinit = true);
