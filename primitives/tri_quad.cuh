@@ -42,7 +42,7 @@ public:
 
 	__device__
 	const point3 center() const {
-		return (u() + v() / 2.0f) + Q();
+		return ((u() + v()) / 2.0f) + Q();
 	}
 
 	__device__
