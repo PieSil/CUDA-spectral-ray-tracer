@@ -46,6 +46,7 @@ add_executable(spectral-rt-project
         primitives/tri_quad.cu
         primitives/prism.cu
         primitives/tri_box.cu
+        primitives/pyramid.cu
         io/save_image.cpp
         image/image.cpp
         rendering/render_manager.cu
