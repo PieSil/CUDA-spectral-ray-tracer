@@ -74,6 +74,18 @@ public:
 		return bounce_limit;
 	}
 
+	const bool logActive() const {
+		return do_log;
+	}
+
+	const bool doSaveImage() const {
+		return do_save;
+	}
+
+	const bool showRender() const {
+		return show_render;
+	}
+
 	void const setImgTitle(const string val_str) {
 		image_title = val_str;
 	}
@@ -152,6 +164,18 @@ public:
 		}
 	}
 
+	void const setDoLog(const bool val) {
+		do_log = val;
+	}
+
+	void const setShowRender(const bool val) {
+		show_render = val;
+	}
+
+	void const setDoSave(const bool val) {
+		do_save = val;
+	}
+
 private:
 	void resetYres() {
 		/* Calculate the image height, and ensure that it's at least 1 */
@@ -195,6 +219,11 @@ private:
 	//quality
 	uint n_samples = 500;
 	uint bounce_limit = 10;
+
+	//logs
+	bool do_log = false;
+	bool show_render = true;
+	bool do_save = false;
 };
 
 //a class to ease parsing and managing of CLI arguments
@@ -222,7 +251,10 @@ public:
 		 * -yc/--ycsize: chunk resolution along y, default = xc (if not set then yres)
 		 * -ns/--nsamples: number of samples per pixel, default: 500
 		 * -bl/--bounce-limit: max number of bounces for each ray, default: 10
-		 *
+		 * --do-log: enables logging at the end of render
+		 * --no-show: disables display of render
+		 * --save: saves final result as image
+		 * 
 		 * -- POSSIBLE FUTURE SUPPORTED ARGUMENTS--
 		 * -nstr/--nstreams: number of different streams to use for rendering, default: 1
 		 * -sm/--sort-materials: whether to sort materials based on id after each bounce simulation, default: true
@@ -259,6 +291,15 @@ public:
 			}
 			else if (!is_last && (arg == "-bl" || arg == "--bounce-limit")) {
 				params.setBounceLimit(argv[++i]);
+			}
+			else if (arg == "--do-log") {
+				params.setDoLog(true);
+			}
+			else if (arg == "--no-show") {
+				params.setShowRender(false);
+			}
+			else if (arg == "--save") {
+				params.setDoSave(true);
 			}
 			else {
 				cout << "Unkown argument name: " << arg << endl;
