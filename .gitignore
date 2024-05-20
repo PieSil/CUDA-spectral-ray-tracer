@@ -4,3 +4,4 @@ CMakeSettings.json
 build/
 cmake-build-debug/
 /profiling/
+/old_code/
