@@ -3,3 +3,4 @@ CMakeSettings.json
 .vs/
 build/
 cmake-build-debug/
+/profiling/
