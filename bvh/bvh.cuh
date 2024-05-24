@@ -51,7 +51,6 @@ public:
     explicit bvh_node(bool is_leaf) : is_leaf(is_leaf) {
         left = nullptr;
         right = nullptr;
-        bbox = nullptr;
     }
 
     __device__
@@ -66,27 +65,26 @@ public:
 
     __host__ __device__
     aabb bounding_box() const {
-        return is_leaf ? primitive->bounding_box() : *bbox;
+        return is_leaf ? primitive->bounding_box() : bbox;
     }
 
     __device__
     void create_bbox() {
         if (left != nullptr && right != nullptr)
-            bbox = new aabb(left->bounding_box(), right->bounding_box());
+            bbox = aabb(left->bounding_box(), right->bounding_box());
 
         else if (left != nullptr) {
-            bbox = new aabb(left->bounding_box());
+            bbox = aabb(left->bounding_box());
         }
         else if (right != nullptr) {
-            bbox = new aabb(right->bounding_box());
+            bbox = aabb(right->bounding_box());
         }
 
     }
 
     __host__ __device__
     ~bvh_node() {
-        if (!is_leaf)
-            delete bbox;
+
 
         delete left;
         delete right;
@@ -96,7 +94,7 @@ public:
     bvh_node* right;
     bool is_leaf;
     tri* primitive;
-    aabb* bbox;
+    aabb bbox;
 
 };
 

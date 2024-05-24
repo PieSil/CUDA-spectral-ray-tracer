@@ -73,7 +73,7 @@ void quicksort_primitives(tri** src_objects, int start, int end, bool(*compare)(
 __device__
 bool bvh_node::hit(const ray &r, float min, float max, hit_record &rec) const {
 
-    return is_leaf ?  primitive->hit(r, min, max, rec) : bbox->hit(r, min, max);
+    return is_leaf ?  primitive->hit(r, min, max, rec) : bbox.hit(r, min, max);
 
     /*if(!hit_volume->hit(r, ray_t, rec))
         return false;
@@ -186,7 +186,6 @@ __device__ bool bvh::build_bvh(tri** src_objects, size_t list_size, curandState*
                 node->is_leaf = true;
                 node->left = nullptr;
                 node->right = nullptr;
-                node->bbox = nullptr;
                 node->primitive = src_objects[current.start];
             } else {
                 int axis = cuda_random_int(0, 2, local_rand_state);
@@ -280,7 +279,7 @@ __device__ void bvh::build_nodes_bboxes() {
             //peek element on tos
             bvh_node* top_node = node_stack[tos];
 
-            if (top_node->right->is_leaf || top_node->right->bbox != nullptr) {
+            if (top_node->right->is_leaf || top_node->right->bbox.isValid()) {
                 //compute bbox based on children
                 bbox_created++;
                 top_node->create_bbox();
