@@ -80,21 +80,23 @@ public:
 		}
 	}
 
-	void add_title(const string _title);
+	void add_title(string _title);
 
-	void add_entry(const string name, const string value);
+	void add_entry(string name, string value);
 
-	void add_entry(const string name, const unsigned int value);
+	void add_entry(string name, unsigned int value);
 
-	void add_entry(const string name, const size_t value);
+	void add_entry(string name, size_t value);
 
-	void add_entry(const string name, const int value);
+	void add_entry(string name, int value);
 
 	//std::numeric_limits<float>::digits10 + 1
 
-	void add_entry(const string name, const float value);
+	void add_entry(string name, float value);
 
-	void add_entry(const string name, const double value);
+	void add_entry(string name, double value);
+
+    void sum_value(string name, float value);
 
 
 private:

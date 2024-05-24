@@ -69,31 +69,31 @@ void log_context::add_filename_option(FilenameOption opt) {
 	name_options.insert(std::upper_bound(name_options.begin(), name_options.end(), opt), opt);
 }
 
-void log_context::add_entry(string name, string value) {
+void log_context::add_entry(const string name, const string value) {
 	data_insertion_order.insert(data_insertion_order.end(), name);
 	data[name] = value;
 }
 
-void log_context::add_entry(string name, unsigned int value) {
+void log_context::add_entry(const string name, const unsigned int value) {
 	add_entry(name, to_string(value));
 }
 
-void log_context::add_entry(string name, size_t value) {
+void log_context::add_entry(const string name, const size_t value) {
 	add_entry(name, to_string(value));
 }
 
-void log_context::add_entry(string name, int value) {
+void log_context::add_entry(const string name, const int value) {
 	add_entry(name, to_string(value));
 }
 
-void log_context::add_title(string _title) {
+void log_context::add_title(const string _title) {
 	title = _title;
 	add_filename_option(FilenameOption::TITLE);
 }
 
 //std::numeric_limits<float>::digits10 + 1
 
-void log_context::add_entry(string name, float value) {
+void log_context::add_entry(const string name, const float value) {
 	//ensure max precision when converting to string
 	std::ostringstream oss;
 	oss << std::setprecision(std::numeric_limits<float>::digits10 + 1) << value;
@@ -102,10 +102,22 @@ void log_context::add_entry(string name, float value) {
 	add_entry(name, oss.str());
 }
 
-void log_context::add_entry(const string name, double value) {
+void log_context::add_entry(const string name, const double value) {
 	std::ostringstream oss;
 	oss << std::setprecision(std::numeric_limits<double>::digits10 + 1) << value;
 
 	//add entry
 	add_entry(name, oss.str());
+}
+
+void log_context::sum_value(string name, float value) {
+    try {
+        string str_val = data.at(name);
+        float new_val = stof(str_val) + value;
+        add_entry(name, (float)new_val);
+    } catch (const std::out_of_range& e) {
+        add_entry(name,  (float)value);
+    } catch (...) {
+        cerr << "Unexpected error while trying to sum a float value to entry with name \"" << name << "\"\n leaving entry unaltered" << endl;
+    }
 }
