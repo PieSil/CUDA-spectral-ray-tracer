@@ -263,7 +263,7 @@ void renderer::init_device_params(dim3 _threads, dim3 _blocks, uint _max_chunk_w
         //    free(h_max_rays);
 
         //    unsigned shared_mem_size = (shadow_ray_iterations*sizeof(int)*threads.x*threads.y*threads.z);
-    shared_mem_size = (N_CIE_SAMPLES);
+    shared_mem_size = (N_CIE_SAMPLES) * sizeof(float);
 
     uint max_num_pixels = max_chunk_width * max_chunk_height;
     checkCudaErrors(cudaMalloc((void**)&dev_fb, max_num_pixels * sizeof(vec3)));
