@@ -233,7 +233,7 @@ public:
 		return instance;
 	}
 
-	bool parseArgs(int argc, char* argv[]) {
+	void parseArgs(int argc, char* argv[]) {
 
 
 		/*
