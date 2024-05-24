@@ -19,6 +19,23 @@ namespace interval {
         __host__ __device__
         numeric_interval(const numeric_interval& a, const numeric_interval& b) : min(fmin(a.min, b.min)), max(fmax(a.max, b.max)) {}
 
+        __host__ __device__
+        numeric_interval(const numeric_interval& other) : min(other.min), max(other.max) {
+
+        }
+
+        __host__ __device__
+        numeric_interval& operator=(const numeric_interval& r) {
+            min = r.min;
+            max = r.max;
+            return *this;
+        }
+
+        __host__ __device__
+        const bool isEmpty() const {
+            return min > max;
+        }
+
         float min;
         float max;
     };
