@@ -32,6 +32,7 @@ public:
         y = numeric_interval(box0.y, box1.y);
         z = numeric_interval(box0.z, box1.z);
     }
+
     __host__ __device__
     aabb(const point3& a, const point3& b) {
         /*
@@ -53,6 +54,24 @@ public:
         x = numeric_interval(fmin(v1[0], fmin(v2.e[0], v3.e[0])), fmax(v1.e[0], fmax(v2.e[0], v3.e[0])));
         y = numeric_interval(fmin(v1[1], fmin(v2.e[1], v3.e[1])), fmax(v1.e[1], fmax(v2.e[1], v3.e[1])));
         z = numeric_interval(fmin(v1[2], fmin(v2.e[2], v3.e[2])), fmax(v1.e[2], fmax(v2.e[2], v3.e[2])));
+    }
+
+    __host__ __device__
+    aabb(const aabb& other) : x(other.x), y(other.y), z(other.z) {}
+
+    __host__ __device__
+    aabb& operator=(const aabb& r) {
+        x = r.x;
+        y = r.y;
+        z = r.z;
+    }
+
+    __host__ __device__
+    const bool isValid() const {
+        //check if size of the aabb is valid on at least one axis
+        //basically used to check if aabb has been initialized or not
+
+        return !(x.isEmpty() && y.isEmpty() && z.isEmpty());
     }
 
     __host__ __device__
