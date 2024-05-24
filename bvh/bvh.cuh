@@ -48,16 +48,35 @@ class bvh_node {
 public:
 
     __device__
-    explicit bvh_node(bool is_leaf) : is_leaf(is_leaf) {
+    explicit bvh_node(bool is_leaf) : is_leaf(is_leaf), left_in_cache(false), right_in_cache(false) {
         left = nullptr;
         right = nullptr;
     }
 
     __device__
-    explicit bvh_node(tri* t) : primitive(t) {
+    explicit bvh_node(tri* t) : primitive(t), left_in_cache(false), right_in_cache(false) {
         is_leaf = true;
         left = nullptr;
         right = nullptr;
+    }
+
+    __device__
+    bvh_node(const bvh_node& other) : bbox(other.bbox), left_in_cache(other.left_in_cache), right_in_cache(other.right_in_cache), is_leaf(other.is_leaf) {
+        //we want a shallow copy
+
+        left = other.left;
+        right = other.right;
+        primitive = other.primitive;
+    }
+
+    bvh_node& operator=(const bvh_node& r) {
+        bbox = r.bbox;
+        left_in_cache = r.left_in_cache;
+        right_in_cache = r.right_in_cache;
+        is_leaf = r.is_leaf;
+        left = r.left;
+        right = r.right;
+        primitive = r.primitive;
     }
 
     __device__
@@ -92,6 +111,8 @@ public:
 
     bvh_node* left;
     bvh_node* right;
+    bool left_in_cache;
+    bool right_in_cache;
     bool is_leaf;
     tri* primitive;
     aabb bbox;
