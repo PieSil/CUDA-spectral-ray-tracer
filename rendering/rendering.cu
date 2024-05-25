@@ -5,15 +5,14 @@
 #include "rendering.cuh"
 
 __device__
-void renderer::ray_bounce(ray &r, const float *background_emittance_spectrum, bvh** bvh, const uint bounce_limit, curandState *local_rand_state) {
+void renderer::ray_bounce(ray &r, const float *background_emittance_spectrum, bvh** bvh, const uint bounce_limit, bvh_node* node_cache, curandState* local_rand_state) {
 
 
     hit_record rec;
-    //ray cur_ray = r;
 
     for (int n_bounces = 0; n_bounces < bounce_limit; n_bounces++) {
 
-        if (!(*bvh)->hit(r, 0.0f, FLT_MAX, rec)) {
+        if (!bvh::hit(r, 0.0f, FLT_MAX, rec, &node_cache[0], (*bvh)->is_valid())) {
             r.mul_spectrum(background_emittance_spectrum);
 
             return; //background * attenuation;
@@ -139,19 +138,28 @@ spectral_render_kernel(vec3 *fb, bvh **bvh, uint width, uint height, uint offset
     uint i = threadIdx.x + blockIdx.x * blockDim.x; //col idx
     uint j = threadIdx.y + blockIdx.y * blockDim.y; //row idx
 
-    extern __shared__ char array[];
-
     if((i >= width) || j >= height)
         return;
 
     uint pixel_index = j*width + i;
 
     //INITIALIZE SHARED MEMORY HERE IF NEEDED
+
+    extern __shared__ char array[];
+
     uint thread_in_block_idx = threadIdx.x*blockDim.y + threadIdx.y;
-    float* sh_background_spectrum = (float*)array;
+
+    bvh_node* bvh_node_cache = (bvh_node*)(&array[0]);
+    float* sh_background_spectrum = (float*)(&array[BVH_NODE_CACHE_SIZE*sizeof(bvh_node)]);
+
     if (thread_in_block_idx == 0) {
         for(int k = 0; k < N_CIE_SAMPLES; k++) {
             sh_background_spectrum[k] = background_spectrum[k];
+        }
+
+        //move higher level nodes to shared memory
+        if ((*bvh)->is_valid()) {
+           (*bvh)->to_shared(bvh_node_cache, BVH_NODE_CACHE_SIZE);
         }
     }
 //    uint thread_in_block_idx = threadIdx.x*blockDim.y + threadIdx.y;
@@ -192,7 +200,7 @@ spectral_render_kernel(vec3 *fb, bvh **bvh, uint width, uint height, uint offset
                         cam_data.defocus_angle, &local_rand_state);
 
         
-        renderer::ray_bounce(r, sh_background_spectrum, bvh, bounce_limit, &local_rand_state);
+        renderer::ray_bounce(r, sh_background_spectrum, bvh, bounce_limit, bvh_node_cache, &local_rand_state);
 
         pixel_color += dev_spectrum_to_XYZ(r.wavelengths, r.power_distr, N_RAY_WAVELENGTHS);
     }
@@ -253,18 +261,14 @@ void renderer::init_device_params(dim3 _threads, dim3 _blocks, uint _max_chunk_w
     max_chunk_width = _max_chunk_width;
     max_chunk_height = _max_chunk_height;
 
-    //    PREPARE SHARED MEMORY SIZE HERE IF NEEDED
-        //    uint* h_n_lights = new uint;
-        //    uint* h_max_rays = new uint;
-        //    checkCudaErrors(cudaMemcpy(h_n_lights, &(l_list->n_lights), sizeof(uint), cudaMemcpyDeviceToHost));
-        //    checkCudaErrors(cudaMemcpy(h_max_rays, &(l_list->max_rays), sizeof(uint), cudaMemcpyDeviceToHost));
-        //    int shadow_ray_iterations = int(min(*h_n_lights, *h_max_rays));
-        //    free(h_n_lights);
-        //    free(h_max_rays);
+    //    PREPARE SHARED MEMORY SIZE HERE
 
-        //    unsigned shared_mem_size = (shadow_ray_iterations*sizeof(int)*threads.x*threads.y*threads.z);
-    shared_mem_size = (N_CIE_SAMPLES) * sizeof(float);
+    uint shared_bg_size = N_CIE_SAMPLES * sizeof(float);
+    cout << "shared_bg_size is " << shared_bg_size << endl;
+    uint node_cache_size = BVH_NODE_CACHE_SIZE * sizeof(bvh_node);
+    cout << "node_cache_size is " << node_cache_size << endl;
 
+    shared_mem_size = shared_bg_size + node_cache_size;
     uint max_num_pixels = max_chunk_width * max_chunk_height;
     checkCudaErrors(cudaMalloc((void**)&dev_fb, max_num_pixels * sizeof(vec3)));
     checkCudaErrors(cudaGetLastError());
@@ -299,7 +303,10 @@ void renderer::init_device_params(dim3 _threads, dim3 _blocks, uint _max_chunk_w
     lc->add_entry("blocks y", blocks.y);
     lc->add_entry("blocks z", blocks.z);
 
-    
+    cudaFuncAttributes attr;
+    cudaFuncGetAttributes(&attr, spectral_render_kernel);
+    cout << "Max threads per block: " << attr.maxThreadsPerBlock << endl;
+    cout << "Registers per thread: " << attr.numRegs << endl;
 
     device_inited = true;
 }

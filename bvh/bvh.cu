@@ -73,7 +73,7 @@ void quicksort_primitives(tri** src_objects, int start, int end, bool(*compare)(
 __device__
 bool bvh_node::hit(const ray &r, float min, float max, hit_record &rec) const {
 
-    return is_leaf ?  primitive->hit(r, min, max, rec) : bbox.hit(r, min, max);
+    return is_leaf ? primitive->hit(r, min, max, rec) : bbox.hit(r, min, max);
 
     /*if(!hit_volume->hit(r, ray_t, rec))
         return false;
@@ -87,16 +87,21 @@ bool bvh_node::hit(const ray &r, float min, float max, hit_record &rec) const {
 
 __device__
 bool bvh::hit(const ray &r, float min, float max, hit_record &rec) const {
+    return hit(r, min, max, rec, root, is_valid());
+}
 
-    if(!is_valid())
+__device__
+bool bvh::hit(const ray &r, float min, float max, hit_record &rec, bvh_node* root, const bool is_valid) {
+
+    if (!is_valid)
         return false;
 
-    // Allocate traversal stack from thread-local memory,
-    // and push NULL to indicate that there are no postponed nodes.
     bool hit_anything = false;
     float closest_so_far = max;
     //printf("computing hits\n");
 
+    // Allocate traversal stack from thread-local memory,
+    // and push NULL to indicate that there are no postponed nodes.
     bvh_node* stack[64];
     bvh_node** stack_ptr = stack;
     *stack_ptr++ = nullptr; // push
@@ -105,55 +110,96 @@ bool bvh::hit(const ray &r, float min, float max, hit_record &rec) const {
     bvh_node* node = root;
 
     if (node->is_leaf) {
-        //only one element 
+        //only one element
         if (node->hit(r, min, closest_so_far, rec)) {
             hit_anything = true;
             closest_so_far = rec.t;
         }
     } else do {
-        bvh_node* child_l = node->left;
-        bvh_node* child_r = node->right;
+            //bvh_node* child_l = node->get_left(block_mutex, node_cache, cur_cache_idx, cache_size);
+            //bvh_node* child_r = node->get_right(block_mutex, node_cache, cur_cache_idx, cache_size);
+            bvh_node* child_l = node->get_left();
+            bvh_node* child_r = node->get_right();
 
-        //TODO: verify that rec is not updated if collision isn't closer than current one
-        hit_record temp_rec;
-        bool hits_l = child_l != nullptr && (child_l->hit(r, min, closest_so_far, temp_rec));
-        if (hits_l && child_l->is_leaf) {
-            hit_anything = true;
-            closest_so_far = temp_rec.t;
-            rec = temp_rec;
-        }
+            //TODO: verify that rec is not updated if collision isn't closer than current one
+            hit_record temp_rec;
+            bool hits_l = child_l != nullptr && (child_l->hit(r, min, closest_so_far, temp_rec));
+            if (hits_l && child_l->is_leaf) {
+                hit_anything = true;
+                closest_so_far = temp_rec.t;
+                rec = temp_rec;
+            }
 
-        bool hits_r = child_r != nullptr && (child_r->hit(r, min, closest_so_far, temp_rec));
-        if (hits_r && child_r->is_leaf) {
-            hit_anything = true;
-            closest_so_far = temp_rec.t;
-            rec = temp_rec;
-        }
+            bool hits_r = child_r != nullptr && (child_r->hit(r, min, closest_so_far, temp_rec));
+            if (hits_r && child_r->is_leaf) {
+                hit_anything = true;
+                closest_so_far = temp_rec.t;
+                rec = temp_rec;
+            }
 
 
-        /*// Query overlaps a leaf node => report collision.
-        if (overlapL && bvh.isLeaf(childL))
-            list.add(queryObjectIdx, bvh.getObjectIdx(childL));
+            /*// Query overlaps a leaf node => report collision.
+            if (overlapL && bvh.isLeaf(childL))
+                list.add(queryObjectIdx, bvh.getObjectIdx(childL));
 
-        if (overlapR && bvh.isLeaf(childR))
-            list.add(queryObjectIdx, bvh.getObjectIdx(childR));*/
+            if (overlapR && bvh.isLeaf(childR))
+                list.add(queryObjectIdx, bvh.getObjectIdx(childR));*/
 
-        // Query overlaps an internal node => traverse.
-        bool traverse_l = child_l != nullptr && (hits_l && !child_l->is_leaf);
-        bool traverse_r = child_r != nullptr && (hits_r && !child_r->is_leaf);
+            // Query overlaps an internal node => traverse.
+            bool traverse_l = child_l != nullptr && (hits_l && !child_l->is_leaf);
+            bool traverse_r = child_r != nullptr && (hits_r && !child_r->is_leaf);
 
-        if (!traverse_l && !traverse_r)
-            node = *--stack_ptr; // pop
-        else {
-            node = traverse_l ? child_l : child_r;
-            if (traverse_l && traverse_r)
-                *stack_ptr++ = child_r; //push
-        }
+            if (!traverse_l && !traverse_r)
+                node = *--stack_ptr; // pop
+            else {
+                node = traverse_l ? child_l : child_r;
+                if (traverse_l && traverse_r)
+                    *stack_ptr++ = child_r; //push
+            }
 
-    } while (node != nullptr);
+        } while (node != nullptr);
 
     return hit_anything;
+
 }
+
+__device__
+void bvh::to_shared(bvh_node* shared_mem, const size_t& shared_mem_size) const {
+    //breadth first traverse of bvh to copy higher nodes into shared memory
+    shared_mem[0] = *root;
+    size_t queue_start = 0;
+    size_t queue_end = 1;
+
+    //iterate over node queue, break loop if shared memory is full
+    while (queue_end < shared_mem_size && queue_start < queue_end) {
+        bvh_node* current = &shared_mem[queue_start];
+        
+        //check if left node exists
+        if (current->left != nullptr) {
+            //move node to shared memory
+            shared_mem[queue_end] = *(current->left);
+            //update pointer to child of current node
+            current->left = &shared_mem[queue_end];
+            //printf("copied left node to shared memory at index %d\n", queue_end);
+
+            queue_end++;
+        }
+
+        //check if right node exists, check for out of bound access in case shared memory is full
+        if (queue_end < shared_mem_size && current->right != nullptr) {
+            //move node to shared memory
+            shared_mem[queue_end] = *(current->right);
+            //update pointer to child of current node
+            current->right = &shared_mem[queue_end];
+            //printf("copied left node to shared memory at index %d\n", queue_end);
+            queue_end++;
+        }
+
+        //process next node
+        queue_start++;
+    }
+}
+
 
 __device__ bool bvh::build_bvh(tri** src_objects, size_t list_size, curandState* local_rand_state) {
 

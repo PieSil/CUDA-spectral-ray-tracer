@@ -15,6 +15,8 @@
 #include "camera.cuh"
 #include "log_context.h"
 
+#define BVH_NODE_CACHE_SIZE 128
+
 struct camera_data {
 
     camera_data() {};
@@ -73,7 +75,7 @@ public:
     void init_device_params(dim3 _threads, dim3 _blocks, uint _max_chunk_width, uint _max_chunk_height);
 
 	__device__
-		static void ray_bounce(ray& r, const float* background_emittance_spectrum, bvh** bvh, uint bounce_limit, curandState* local_rand_state);
+		static void ray_bounce(ray& r, const float* background_emittance_spectrum, bvh** bvh, uint bounce_limit, bvh_node* node_cache, curandState* local_rand_state);
 
 	__device__
 		static ray get_ray(uint i, uint j, const point3 pixel00_loc, const vec3 pixel_delta_u, const vec3 pixel_delta_v,

@@ -48,20 +48,20 @@ class bvh_node {
 public:
 
     __device__
-    explicit bvh_node(bool is_leaf) : is_leaf(is_leaf), left_in_cache(false), right_in_cache(false) {
+    explicit bvh_node(bool is_leaf) : is_leaf(is_leaf) {
         left = nullptr;
         right = nullptr;
     }
 
     __device__
-    explicit bvh_node(tri* t) : primitive(t), left_in_cache(false), right_in_cache(false) {
+    explicit bvh_node(tri* t) : primitive(t) {
         is_leaf = true;
         left = nullptr;
         right = nullptr;
     }
 
     __device__
-    bvh_node(const bvh_node& other) : bbox(other.bbox), left_in_cache(other.left_in_cache), right_in_cache(other.right_in_cache), is_leaf(other.is_leaf) {
+    bvh_node(const bvh_node& other) : bbox(other.bbox), is_leaf(other.is_leaf) {
         //we want a shallow copy
 
         left = other.left;
@@ -69,15 +69,8 @@ public:
         primitive = other.primitive;
     }
 
-    bvh_node& operator=(const bvh_node& r) {
-        bbox = r.bbox;
-        left_in_cache = r.left_in_cache;
-        right_in_cache = r.right_in_cache;
-        is_leaf = r.is_leaf;
-        left = r.left;
-        right = r.right;
-        primitive = r.primitive;
-    }
+    __device__
+    bvh_node& operator=(const bvh_node& r) = default;
 
     __device__
     bool hit(const ray &r, float min, float max, hit_record &rec) const;
@@ -101,9 +94,29 @@ public:
 
     }
 
+    __device__
+    bvh_node* get_left() const {
+        return left;
+    }
+
+    __device__
+    bvh_node* get_right() const {
+        return right;
+    }
+
     __host__ __device__
     ~bvh_node() {
+    }
 
+    __host__ __device__
+    void dealloc() {
+        if (left != nullptr) {
+            left->dealloc();
+        }
+
+        if (right != nullptr) {
+            right->dealloc();
+        }
 
         delete left;
         delete right;
@@ -111,8 +124,6 @@ public:
 
     bvh_node* left;
     bvh_node* right;
-    bool left_in_cache;
-    bool right_in_cache;
     bool is_leaf;
     tri* primitive;
     aabb bbox;
@@ -152,7 +163,8 @@ public:
 
     __host__ __device__
     ~bvh() {
-        delete root;
+        if (root != nullptr)
+            root->dealloc();
         //delete[] nodes;
     }
 
@@ -164,21 +176,27 @@ public:
 
     static __device__
     bvh_node* get_left_child(bvh_node* node) {
-        return node->left;
+        return node->get_left();
     }
 
     static __device__
     bvh_node* get_right_child(bvh_node* node) {
-        return node->right;
+        return node->get_right();
     }
 
     __device__
     bool hit(const ray &r, float min, float max, hit_record &rec) const;
 
+    __device__
+    static bool hit(const ray& r, float min, float max, hit_record& rec, bvh_node* root, bool is_valid);
+
     __host__ __device__
     aabb bounding_box() const {
         return global_bbox;
     }
+
+    __device__
+        void to_shared(bvh_node* shared_mem, const size_t& shared_mem_size) const;
 
     __device__
     static bool box_compare(
@@ -206,6 +224,11 @@ public:
     bool is_valid() const {
         return valid;
     }
+
+    __device__
+    bvh_node* getRoot() const {
+        return root;
+    };
 
 private:
     //bvh_node** nodes;
