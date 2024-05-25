@@ -50,11 +50,12 @@ add_executable(spectral-rt-project
         rendering/render_manager.cu
         _log_/log_context.cpp
         io/params.cpp
-        primitives/hit_record.cuh)
+        primitives/hit_record.cuh
+)
 
 set_target_properties(spectral-rt-project PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
-        CUDA_ARCHITECTURES "50;75;80"
+        CUDA_ARCHITECTURES "50;52;75;80;86"
         CUDA_RESOLVE_DEVICE_SYMBOLS ON
         CXX_PRECOMPILE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/utils/srgb_to_spectrum.cuh)
 
