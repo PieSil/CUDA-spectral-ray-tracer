@@ -49,24 +49,36 @@ class bvh_node {
 public:
 
     __device__
+    bvh_node() : is_leaf(false), /*right(nullptr), left(nullptr)*/left_idx(-1), right_idx(-1), primitive(nullptr) {
+        
+    }
+
+    __device__
     explicit bvh_node(bool is_leaf) : is_leaf(is_leaf) {
+        /*
         left = nullptr;
         right = nullptr;
+        */
+        left_idx = -1;
+        right_idx = -1;
     }
 
     __device__
     explicit bvh_node(tri* t) : primitive(t) {
         is_leaf = true;
+        /*
         left = nullptr;
         right = nullptr;
+        */
+        left_idx = -1;
+        right_idx = -1;
     }
 
     __device__
     bvh_node(const bvh_node& other) : bbox(other.bbox), is_leaf(other.is_leaf) {
-        //we want a shallow copy
 
-        left = other.left;
-        right = other.right;
+        left_idx = other.left_idx;
+        right_idx = other.right_idx;
         primitive = other.primitive;
     }
 
@@ -82,20 +94,20 @@ public:
     }
 
     __device__
-    void create_bbox() {
-        if (left != nullptr && right != nullptr)
-            bbox = aabb(left->bounding_box(), right->bounding_box());
+    void create_bbox(bvh_node* nodes) {
+        if (left_idx != -1 && right_idx != -1)
+            bbox = aabb(nodes[left_idx].bounding_box(), nodes[right_idx].bounding_box());
 
-        else if (left != nullptr) {
-            bbox = aabb(left->bounding_box());
+        else if (left_idx != -1) {
+            bbox = aabb(nodes[left_idx].bounding_box());
         }
-        else if (right != nullptr) {
-            bbox = aabb(right->bounding_box());
+        else if (right_idx != -1) {
+            bbox = aabb(nodes[right_idx].bounding_box());
         }
 
     }
 
-    __device__
+    /*__device__
     bvh_node* get_left() const {
         return left;
     }
@@ -103,7 +115,7 @@ public:
     __device__
     bvh_node* get_right() const {
         return right;
-    }
+    }*/
 
     __host__ __device__
     ~bvh_node() {
@@ -111,6 +123,7 @@ public:
 
     __host__ __device__
     void dealloc() {
+        /*
         if (left != nullptr) {
             left->dealloc();
         }
@@ -121,10 +134,13 @@ public:
 
         delete left;
         delete right;
+        */
     }
 
-    bvh_node* left;
-    bvh_node* right;
+    //bvh_node* left;
+    //bvh_node* right;
+    int left_idx = -1;
+    int right_idx = -1;
     bool is_leaf;
     tri* primitive;
     aabb bbox;
@@ -149,6 +165,8 @@ public:
     __device__
     bvh(tri** src_objects, size_t list_size, curandState* local_rand_state) {
         global_bbox = aabb(); //empty bbox
+        uint max_size = 2 * list_size - 1; //Compute space to allocate on global memory
+        nodes = new bvh_node[max_size];
         if (list_size > 0 && build_bvh(src_objects, list_size, local_rand_state)) {
             build_nodes_bboxes();
             valid = true;
@@ -164,8 +182,12 @@ public:
 
     __host__ __device__
     ~bvh() {
+        /*
         if (root != nullptr)
             root->dealloc();
+        */
+
+        delete[] nodes;
         //delete[] nodes;
     }
 
@@ -175,6 +197,7 @@ public:
     __device__
     void build_nodes_bboxes();
 
+    /*
     static __device__
     bvh_node* get_left_child(bvh_node* node) {
         return node->get_left();
@@ -184,12 +207,13 @@ public:
     bvh_node* get_right_child(bvh_node* node) {
         return node->get_right();
     }
+    */
+
+    //__device__
+    //bool hit(const ray &r, float min, float max, hit_record &rec) const;
 
     __device__
-    bool hit(const ray &r, float min, float max, hit_record &rec) const;
-
-    __device__
-    static bool hit(const ray& r, float min, float max, hit_record& rec, bvh_node* root);
+    bool hit(const ray& r, float min, float max, hit_record& rec, bvh_node* shared_mem_nodes, uint shared_mem_size);
 
     __host__ __device__
     aabb bounding_box() const {
@@ -197,7 +221,7 @@ public:
     }
 
     __device__
-    void to_shared(bvh_node* shared_mem, const size_t& shared_mem_size) const;
+    //void to_shared(bvh_node* shared_mem, const size_t& shared_mem_size) const;
 
     __device__
     static bool box_compare(
@@ -226,17 +250,24 @@ public:
         return valid;
     }
 
-    __device__
+    /*__device__
     bvh_node* getRoot() const {
         return root;
-    };
+    };*/
+
+    __device__
+    const bvh_node* getNodesArray() const {
+        return nodes;
+    }
 
 private:
     //bvh_node** nodes;
     uint size;
-    bvh_node* root;
+    //bvh_node* root;
+    int root_idx = 0;
     aabb global_bbox;
     bool valid;
+    bvh_node* nodes;
 
 };
 

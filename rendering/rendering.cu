@@ -5,14 +5,14 @@
 #include "rendering.cuh"
 
 __device__
-void renderer::ray_bounce(const uint t_in_block_idx, bool do_something, ray &r, const float *background_emittance_spectrum, const uint bounce_limit, hit_record* shared_hit_records, bvh_node* bvh_root, curandState* local_rand_state) {
+void renderer::ray_bounce(const uint t_in_block_idx, bvh** bvh, bool do_something, ray &r, const float *background_emittance_spectrum, const uint bounce_limit, hit_record* shared_hit_records, bvh_node * bvh_node_cache, curandState* local_rand_state) {
 
     bool stop_bouncing = !do_something;
     hit_record* hit_rec = &shared_hit_records[t_in_block_idx];
 
     for (int n_bounces = 0; n_bounces < bounce_limit; n_bounces++) {
 
-        if (!stop_bouncing && !bvh::hit(r, 0.0f, FLT_MAX, (*hit_rec), bvh_root)) {
+        if (!stop_bouncing && !(*bvh)->hit(r, 0.0f, FLT_MAX, (*hit_rec), bvh_node_cache, BVH_NODE_CACHE_SIZE)) {
             //hit_rec->mat = nullptr;
             r.mul_spectrum(background_emittance_spectrum);
             stop_bouncing = true;
@@ -154,11 +154,24 @@ spectral_render_kernel(vec3 *fb, bvh **bvh, uint width, uint height, uint offset
 
     uint thread_in_block_idx = threadIdx.y*blockDim.x + threadIdx.x;
 
-    bvh_node* bvh_node_cache = (bvh_node*)(&array[0]);
+    bvh_node* bvh_node_cache= (bvh_node*)(&array[0]);
     hit_record* shared_hit_records = (hit_record*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node)]);
     float* sh_background_spectrum = (float*)(&array[BVH_NODE_CACHE_SIZE*sizeof(bvh_node) + (blockDim.x * blockDim.y * sizeof(hit_record))]);
     uint* hit_record_indices = (uint*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (blockDim.x * blockDim.y * sizeof(hit_record)) + N_CIE_SAMPLES*sizeof(float)]);
 
+
+    for (uint idx = thread_in_block_idx; idx < N_CIE_SAMPLES; idx += blockDim.x * blockDim.y) {
+        sh_background_spectrum[idx] = background_spectrum[idx];
+    }
+
+    {
+        const bvh_node* higher_bvh_nodes = (*bvh)->getNodesArray();
+        for (uint idx = thread_in_block_idx; idx < BVH_NODE_CACHE_SIZE; idx += blockDim.x * blockDim.y) {
+            bvh_node_cache[idx] = higher_bvh_nodes[idx];
+        }
+    }
+
+    /*
     if (thread_in_block_idx == 0) {
         for(int k = 0; k < N_CIE_SAMPLES; k++) {
             sh_background_spectrum[k] = background_spectrum[k];
@@ -169,6 +182,7 @@ spectral_render_kernel(vec3 *fb, bvh **bvh, uint width, uint height, uint offset
            (*bvh)->to_shared(bvh_node_cache, BVH_NODE_CACHE_SIZE);
         }
     }
+    */
 
     shared_hit_records[thread_in_block_idx] = hit_record();
     hit_record_indices[thread_in_block_idx] = thread_in_block_idx;
@@ -216,7 +230,7 @@ spectral_render_kernel(vec3 *fb, bvh **bvh, uint width, uint height, uint offset
                     cam_data.defocus_angle, &local_rand_state);
 
 
-            renderer::ray_bounce(thread_in_block_idx, do_something, r, sh_background_spectrum, bounce_limit, shared_hit_records, &bvh_node_cache[0], &local_rand_state);
+            renderer::ray_bounce(thread_in_block_idx, bvh, do_something, r, sh_background_spectrum, bounce_limit, shared_hit_records, bvh_node_cache, &local_rand_state);
 
            //putting do something check here increases register per thread and makes little difference performance wise
            pixel_color += dev_spectrum_to_XYZ(r.wavelengths, r.power_distr, N_RAY_WAVELENGTHS);
