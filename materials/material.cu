@@ -81,7 +81,7 @@ const bool material::scatter(ray& r_in, const hit_record& rec, curandState* loca
         }
         break;
 
-        case MAT_TYPE::METALLIC:
+        case METALLIC:
             //TODO: check if total light reflection needs to be performed
             
              
@@ -91,13 +91,13 @@ const bool material::scatter(ray& r_in, const hit_record& rec, curandState* loca
             did_scatter ? r_in.mul_spectrum(spectral_reflectance_distribution) : r_in.mul_spectrum(0.0f);
         break;
 
-        case MAT_TYPE::DIELECTRIC:
+        case DIELECTRIC:
             float ir = sellmeier_index(sellmeier_B, sellmeier_C, r_in.wavelengths[0]);
             did_scatter = refraction_scatter(ir, r_in, rec, scatter_origin, scatter_direction, unit_in_direction,
                 local_rand_state, false);
             break;
 
-        case MAT_TYPE::DIELECTRIC_CONST:
+        case DIELECTRIC_CONST:
             /* 
              * Some notes regarding refraction_scatter args:
              * 1) for DIELECTRIC_CONST material sellmeier_B[0] contains the refractive index.
@@ -110,7 +110,7 @@ const bool material::scatter(ray& r_in, const hit_record& rec, curandState* loca
 
         break;
 
-        case MAT_TYPE::EMISSIVE:
+        case EMISSIVE:
             /*
             weight = spectrum_interp(spectral_emittance_distribution, r_in.wavelength);
 
@@ -122,7 +122,7 @@ const bool material::scatter(ray& r_in, const hit_record& rec, curandState* loca
             did_scatter = false;
             break;
 
-        case MAT_TYPE::LAMBERTIAN:
+        case LAMBERTIAN:
         default:
             r_in.mul_spectrum(spectral_reflectance_distribution);
 

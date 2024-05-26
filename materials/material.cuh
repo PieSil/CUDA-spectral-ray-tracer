@@ -13,6 +13,15 @@
 
 #define EPSILON 0.0001f
 
+#define LAMBERTIAN 0
+#define METALLIC 1
+#define DIELECTRIC 2
+#define DIELECTRIC_CONST 3
+#define EMISSIVE 4
+#define NORMAL_TEST 5
+#define NO_MAT 6
+
+/*
 enum MAT_TYPE {
     LAMBERTIAN,
     METALLIC,
@@ -22,12 +31,13 @@ enum MAT_TYPE {
     NORMAL_TEST,
     NO_MAT
 };
+*/
 
 class material {
 public:
     __host__ __device__
     material() : albedo(1.0f, 1.0f, 1.0f), reflection_fuzz(1.0f), emitted(0.0f, 0.0f, 0.0f),
-                 material_type(MAT_TYPE::NO_MAT), emission_power(0.0f) {
+                 material_type(NO_MAT), emission_power(0.0f) {
         for (int i = 0; i < 3; i++) {
             sellmeier_B[i] = 0.f;
             sellmeier_C[i] = 0.f;
@@ -35,7 +45,7 @@ public:
     }
 
     __device__
-        material(color _albedo, float fuzz, color emit, float ir, float power, MAT_TYPE type) : albedo(_albedo), reflection_fuzz(fuzz), emitted(emit),
+        material(color _albedo, float fuzz, color emit, float ir, float power, uint type) : albedo(_albedo), reflection_fuzz(fuzz), emitted(emit),
         material_type(type), emission_power(power) {
         for (int i = 0; i < 3; i++) {
 
@@ -50,7 +60,7 @@ public:
     }
 
     __device__
-    material(color _albedo, float fuzz, color emit, const float b[3], const float c[3], float power, MAT_TYPE type) : albedo(_albedo), reflection_fuzz(fuzz), emitted(emit),
+    material(color _albedo, float fuzz, color emit, const float b[3], const float c[3], float power, uint type) : albedo(_albedo), reflection_fuzz(fuzz), emitted(emit),
                  material_type(type), emission_power(power) {
         for (int i = 0; i < 3; i++) {
             sellmeier_B[i] = b[i];
@@ -118,7 +128,7 @@ public:
     color albedo;
     color emitted;
     float reflection_fuzz;
-    MAT_TYPE material_type;
+    uint material_type;
     float spectral_reflectance_distribution[N_CIE_SAMPLES];
     float spectral_emittance_distribution[N_CIE_SAMPLES];
     float emission_power;
