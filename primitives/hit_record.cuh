@@ -12,11 +12,17 @@ struct material;
 
 class hit_record {
 public:
+
+    hit_record() = default;
+    hit_record(const hit_record& other) = default;
+    hit_record& operator=(const hit_record& r) = default;
+
     point3 p;
     vec3 normal;
     float t;
     //float u, v; //surface coordinates of the ray-object hit point
     bool front_face;
+
     material* mat; //When a ray hits a surface the material pointer will be set to point
     // at the material the surface was given
 
