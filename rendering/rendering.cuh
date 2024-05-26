@@ -15,8 +15,6 @@
 #include "camera.cuh"
 #include "log_context.h"
 
-#define BVH_NODE_CACHE_SIZE 128
-
 struct camera_data {
 
     camera_data() {};

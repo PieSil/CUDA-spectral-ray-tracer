@@ -10,6 +10,7 @@
 #include "cuda_utility.cuh"
 
 #define MAX_DEPTH 64
+#define BVH_NODE_CACHE_SIZE 128
 
 /*
  * bvh build logic and traversal inspired from:
@@ -188,7 +189,7 @@ public:
     bool hit(const ray &r, float min, float max, hit_record &rec) const;
 
     __device__
-    static bool hit(const ray& r, float min, float max, hit_record& rec, bvh_node* root, bool is_valid);
+    static bool hit(const ray& r, float min, float max, hit_record& rec, bvh_node* root);
 
     __host__ __device__
     aabb bounding_box() const {
@@ -196,7 +197,7 @@ public:
     }
 
     __device__
-        void to_shared(bvh_node* shared_mem, const size_t& shared_mem_size) const;
+    void to_shared(bvh_node* shared_mem, const size_t& shared_mem_size) const;
 
     __device__
     static bool box_compare(

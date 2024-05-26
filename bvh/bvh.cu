@@ -87,14 +87,16 @@ bool bvh_node::hit(const ray &r, float min, float max, hit_record &rec) const {
 
 __device__
 bool bvh::hit(const ray &r, float min, float max, hit_record &rec) const {
-    return hit(r, min, max, rec, root, is_valid());
+    bool res = false;
+
+    if (is_valid()) {
+        res = hit(r, min, max, rec, root);
+    }
+    return res;
 }
 
 __device__
-bool bvh::hit(const ray &r, float min, float max, hit_record &rec, bvh_node* root, const bool is_valid) {
-
-    if (!is_valid)
-        return false;
+bool bvh::hit(const ray &r, float min, float max, hit_record &rec, bvh_node* root) {
 
     bool hit_anything = false;
     float closest_so_far = max;
