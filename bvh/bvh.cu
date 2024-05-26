@@ -85,7 +85,6 @@ bool bvh_node::hit(const ray &r, float min, float max, hit_record &rec) const {
 }
 
 
-/*
 __device__
 bool bvh::hit(const ray &r, float min, float max, hit_record &rec) const {
     bool res = false;
@@ -95,10 +94,9 @@ bool bvh::hit(const ray &r, float min, float max, hit_record &rec) const {
     }
     return res;
 }
-*/
 
 __device__
-bool bvh::hit(const ray &r, float min, float max, hit_record &rec, bvh_node* shared_mem_nodes, uint shared_mem_size) {
+bool bvh::hit(const ray &r, float min, float max, hit_record &rec, bvh_node* root) {
 
     bool hit_anything = false;
     float closest_so_far = max;
@@ -111,7 +109,7 @@ bool bvh::hit(const ray &r, float min, float max, hit_record &rec, bvh_node* sha
     *stack_ptr++ = nullptr; // push
 
     // Traverse nodes starting from the root.
-    bvh_node* node = (0 < shared_mem_size) ? &shared_mem_nodes[0] : &nodes[0]; 
+    bvh_node* node = root;
 
     if (node->is_leaf) {
         //only one element
@@ -122,14 +120,10 @@ bool bvh::hit(const ray &r, float min, float max, hit_record &rec, bvh_node* sha
     } else do {
             //bvh_node* child_l = node->get_left(block_mutex, node_cache, cur_cache_idx, cache_size);
             //bvh_node* child_r = node->get_right(block_mutex, node_cache, cur_cache_idx, cache_size);
+            bvh_node* child_l = node->get_left();
+            bvh_node* child_r = node->get_right();
 
-        //access shared memory when possible
-        uint idx = node->left_idx;
-        bvh_node* child_l = idx == -1 ? nullptr : ((idx < shared_mem_size) ? &shared_mem_nodes[idx] : &nodes[idx]);//node->get_left();
-
-        idx = node->right_idx;
-        bvh_node* child_r = idx == -1 ? nullptr : ((idx < shared_mem_size) ? &shared_mem_nodes[idx] : &nodes[idx]);;//node->get_right();
-
+            //TODO: verify that rec is not updated if collision isn't closer than current one
             hit_record temp_rec;
             bool hits_l = child_l != nullptr && (child_l->hit(r, min, closest_so_far, temp_rec));
             if (hits_l && child_l->is_leaf) {
@@ -171,42 +165,43 @@ bool bvh::hit(const ray &r, float min, float max, hit_record &rec, bvh_node* sha
 
 }
 
-//__device__
-//void bvh::to_shared(bvh_node* shared_mem, const size_t& shared_mem_size) const {
-//    //breadth first traverse of bvh to copy higher nodes into shared memory
-//    shared_mem[0] = *root;
-//    size_t queue_start = 0;
-//    size_t queue_end = 1;
-//
-//    //iterate over node queue, break loop if shared memory is full
-//    while (queue_end < shared_mem_size && queue_start < queue_end) {
-//        bvh_node* current = &shared_mem[queue_start];
-//        
-//        //check if left node exists
-//        if (current->left != nullptr) {
-//            //move node to shared memory
-//            shared_mem[queue_end] = *(current->left);
-//            //update pointer to child of current node
-//            current->left = &shared_mem[queue_end];
-//            //printf("copied left node to shared memory at index %d\n", queue_end);
-//
-//            queue_end++;
-//        }
-//
-//        //check if right node exists, check for out of bound access in case shared memory is full
-//        if (queue_end < shared_mem_size && current->right != nullptr) {
-//            //move node to shared memory
-//            shared_mem[queue_end] = *(current->right);
-//            //update pointer to child of current node
-//            current->right = &shared_mem[queue_end];
-//            //printf("copied left node to shared memory at index %d\n", queue_end);
-//            queue_end++;
-//        }
-//
-//        //process next node
-//        queue_start++;
-//    }
-//}
+__device__
+void bvh::to_shared(bvh_node* shared_mem, const size_t& shared_mem_size) const {
+    //breadth first traverse of bvh to copy higher nodes into shared memory
+    shared_mem[0] = *root;
+    size_t queue_start = 0;
+    size_t queue_end = 1;
+
+    //iterate over node queue, break loop if shared memory is full
+    while (queue_end < shared_mem_size && queue_start < queue_end) {
+        bvh_node* current = &shared_mem[queue_start];
+        
+        //check if left node exists
+        if (current->left != nullptr) {
+            //move node to shared memory
+            shared_mem[queue_end] = *(current->left);
+            //update pointer to child of current node
+            current->left = &shared_mem[queue_end];
+            //printf("copied left node to shared memory at index %d\n", queue_end);
+
+            queue_end++;
+        }
+
+        //check if right node exists, check for out of bound access in case shared memory is full
+        if (queue_end < shared_mem_size && current->right != nullptr) {
+            //move node to shared memory
+            shared_mem[queue_end] = *(current->right);
+            //update pointer to child of current node
+            current->right = &shared_mem[queue_end];
+            //printf("copied left node to shared memory at index %d\n", queue_end);
+            queue_end++;
+        }
+
+        //process next node
+        queue_start++;
+    }
+}
+
 
 __device__ bool bvh::build_bvh(tri** src_objects, size_t list_size, curandState* local_rand_state) {
 
@@ -216,17 +211,13 @@ __device__ bool bvh::build_bvh(tri** src_objects, size_t list_size, curandState*
 
     int tos = -1;
     int n_nodes = 0;
-    uint cur_idx = 0;
     //int stack_tos = -1;
     //int nodes_tos = -1;
-    nodes[cur_idx] = bvh_node(false); //root
-    root_idx = 0;
-    //root = new bvh_node(false);
+    root = new bvh_node(false);
     tos++;
     n_nodes++;
     stack[tos] = stack_item(0, list_size);
-    node_stack[tos] = &nodes[cur_idx];
-    cur_idx++;
+    node_stack[tos] = root;
 
     while(tos >= 0) {
         //pop
@@ -241,10 +232,8 @@ __device__ bool bvh::build_bvh(tri** src_objects, size_t list_size, curandState*
             if (is_leaf) {
                 //create leaf node
                 node->is_leaf = true;
-                node->left_idx = -1;
-                //node->left = nullptr;
-                node->right_idx = -1;
-                //node->right = nullptr;
+                node->left = nullptr;
+                node->right = nullptr;
                 node->primitive = src_objects[current.start];
             } else {
                 int axis = cuda_random_int(0, 2, local_rand_state);
@@ -255,39 +244,20 @@ __device__ bool bvh::build_bvh(tri** src_objects, size_t list_size, curandState*
                     //create left and right leaves
                     if (comparator(src_objects[current.start], src_objects[current.start + 1])) {
                         //left
-                        //node->left = new bvh_node(true);
-                        nodes[cur_idx] = bvh_node(true);
-                        node->left_idx = cur_idx;
-                        nodes[cur_idx].primitive = src_objects[current.start];
-                        cur_idx++;
-
-                        //node->left->primitive = src_objects[current.start];
+                        node->left = new bvh_node(true);
+                        node->left->primitive = src_objects[current.start];
 
                         //right
-                        //node->right = new bvh_node(true);
-                        nodes[cur_idx] = bvh_node(true);
-                        node->right_idx = cur_idx;
-                        nodes[cur_idx].primitive = src_objects[current.start + 1];
-                        cur_idx++;
-                        //node->right->primitive = src_objects[current.start + 1];
+                        node->right = new bvh_node(true);
+                        node->right->primitive = src_objects[current.start + 1];
                     } else {
                         //left
-                        //node->left = new bvh_node(true);
-                        nodes[cur_idx] = bvh_node(true);
-                        node->left_idx = cur_idx;
-                        nodes[cur_idx].primitive = src_objects[current.start + 1];
-                        cur_idx++;
-
-                        //node->left->primitive = src_objects[current.start+1];
+                        node->left = new bvh_node(true);
+                        node->left->primitive = src_objects[current.start+1];
 
                         //right
-                        //node->right = new bvh_node(true);
-                        nodes[cur_idx] = bvh_node(true);
-                        node->right_idx = cur_idx;
-                        nodes[cur_idx].primitive = src_objects[current.start];
-                        cur_idx++;
-
-                        //node->right->primitive = src_objects[current.start];
+                        node->right = new bvh_node(true);
+                        node->right->primitive = src_objects[current.start];
                     }
 
                 } else {
@@ -296,15 +266,8 @@ __device__ bool bvh::build_bvh(tri** src_objects, size_t list_size, curandState*
                     quicksort_primitives(src_objects, int(current.start), int(current.end - 1), comparator);
 
                     //more than 2 nodes, create left and right nodes, connect them to current node and push them onto stack
-                    //node->left = new bvh_node(false);
-                    nodes[cur_idx] = bvh_node(false);
-                    node->left_idx = cur_idx;
-                    cur_idx++;
-
-                    //node->right = new bvh_node(false);
-                    nodes[cur_idx] = bvh_node(false);
-                    node->right_idx = cur_idx;
-                    cur_idx++;
+                    node->left = new bvh_node(false);
+                    node->right = new bvh_node(false);
 
                     auto mid = current.start + current_span / 2;
 
@@ -319,8 +282,7 @@ __device__ bool bvh::build_bvh(tri** src_objects, size_t list_size, curandState*
                     }
 
                     stack[tos] = stack_item(current.start, mid);
-                    //node_stack[tos] = node->left;
-                    node_stack[tos] = &nodes[node->left_idx];
+                    node_stack[tos] = node->left;
 
                     //push right child
                     tos++;
@@ -331,8 +293,7 @@ __device__ bool bvh::build_bvh(tri** src_objects, size_t list_size, curandState*
                     }
 
                     stack[tos] = stack_item(mid, current.end);
-                    //node_stack[tos] = node->right;
-                    node_stack[tos] = &nodes[node->right_idx];
+                    node_stack[tos] = node->right;
 
                     n_nodes+=2;
                 }
@@ -350,7 +311,7 @@ __device__ bool bvh::build_bvh(tri** src_objects, size_t list_size, curandState*
 __device__ void bvh::build_nodes_bboxes() {
     
     int bbox_created = 0;
-    bvh_node* current_node = &nodes[0];
+    bvh_node* current_node = root;
     
     if(!current_node->is_leaf) { //at least two elements
         int tos = -1;
@@ -360,20 +321,20 @@ __device__ void bvh::build_nodes_bboxes() {
             //traverse to leftmost inner node of subtree
             while (!current_node->is_leaf) {
                 node_stack[++tos] = current_node;
-                current_node = &nodes[current_node->left_idx];
+                current_node = current_node->left;
             }
 
             //peek element on tos
             bvh_node* top_node = node_stack[tos];
 
-            if (nodes[top_node->right_idx].is_leaf || nodes[top_node->right_idx].bbox.isValid()) {
+            if (top_node->right->is_leaf || top_node->right->bbox.isValid()) {
                 //compute bbox based on children
                 bbox_created++;
-                top_node->create_bbox(nodes);
+                top_node->create_bbox();
                 tos--; //actual pop
             }
             else {
-                current_node = &nodes[top_node->right_idx];
+                current_node = top_node->right;
             }
 
         } while (tos >= 0 || !current_node->is_leaf);
