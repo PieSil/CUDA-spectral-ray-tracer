@@ -71,8 +71,7 @@ void create_world_kernel(uint world_selector, tri** d_list, material** d_mat_lis
 
 
 		for (int i = 0; i < *n_materials; i++) {
-			d_mat_list[i]->compute_albedo_spectrum(dev_sRGBToSpectrum_Data);
-			d_mat_list[i]->compute_emittance_spectrum(dev_sRGBToSpectrum_Data);
+			d_mat_list[i]->compute_spectral_distr(dev_sRGBToSpectrum_Data);
 		}
 
 	}

@@ -70,7 +70,7 @@ const bool material::scatter(ray& r_in, const hit_record& rec, curandState* loca
 
     case NORMAL_TEST:
         if (rec.front_face) {
-            r_in.mul_spectrum(spectral_reflectance_distribution);
+            r_in.mul_spectrum(spectral_distribution);
             did_scatter = lambertian_scatter(rec, scatter_direction, local_rand_state);
         }
 
@@ -88,7 +88,7 @@ const bool material::scatter(ray& r_in, const hit_record& rec, curandState* loca
             did_scatter = reflection_scatter(reflection_fuzz, unit_in_direction, rec, scatter_direction,
                                             local_rand_state);
 
-            did_scatter ? r_in.mul_spectrum(spectral_reflectance_distribution) : r_in.mul_spectrum(0.0f);
+            did_scatter ? r_in.mul_spectrum(spectral_distribution) : r_in.mul_spectrum(0.0f);
         break;
 
         case DIELECTRIC:
@@ -117,14 +117,14 @@ const bool material::scatter(ray& r_in, const hit_record& rec, curandState* loca
             if (random > weight)
                 new_wl = 0.0f;
             */
-            r_in.mul_spectrum(spectral_emittance_distribution);
+            r_in.mul_spectrum(spectral_distribution);
 
             did_scatter = false;
             break;
 
         case LAMBERTIAN:
         default:
-            r_in.mul_spectrum(spectral_reflectance_distribution);
+            r_in.mul_spectrum(spectral_distribution);
 
 //            for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
 //                r_in.wl_pdf[i] /= sum_pdf;

@@ -36,7 +36,7 @@ enum MAT_TYPE {
 class material {
 public:
     __host__ __device__
-    material() : albedo(1.0f, 1.0f, 1.0f), reflection_fuzz(1.0f), emitted(0.0f, 0.0f, 0.0f),
+    material() : col(0.0f, 0.0f, 0.0f), reflection_fuzz(1.0f),
                  material_type(NO_MAT), emission_power(0.0f) {
         for (int i = 0; i < 3; i++) {
             sellmeier_B[i] = 0.f;
@@ -45,7 +45,7 @@ public:
     }
 
     __device__
-        material(color _albedo, float fuzz, color emit, float ir, float power, uint type) : albedo(_albedo), reflection_fuzz(fuzz), emitted(emit),
+        material(color _col, float fuzz, float ir, float power, uint type) : col(_col), reflection_fuzz(fuzz),
         material_type(type), emission_power(power) {
         for (int i = 0; i < 3; i++) {
 
@@ -60,7 +60,7 @@ public:
     }
 
     __device__
-    material(color _albedo, float fuzz, color emit, const float b[3], const float c[3], float power, uint type) : albedo(_albedo), reflection_fuzz(fuzz), emitted(emit),
+    material(color _col, float fuzz, const float b[3], const float c[3], float power, uint type) : col(_col), reflection_fuzz(fuzz),
                  material_type(type), emission_power(power) {
         for (int i = 0; i < 3; i++) {
             sellmeier_B[i] = b[i];
@@ -69,68 +69,61 @@ public:
     }
 
     __device__
-    void compute_albedo_spectrum(float* dev_sRGBToSpectrum_Data) {
-        dev_srgb_to_spectrum(albedo, spectral_reflectance_distribution, dev_sRGBToSpectrum_Data);
-    }
-
-    __device__
-    void compute_emittance_spectrum(float* dev_sRGBToSpectrum_Data) {
-        dev_srgb_to_illuminance_spectrum(emitted, spectral_emittance_distribution, emission_power, dev_sRGBToSpectrum_Data);
-    }
-
-    __device__
-    void setEmittanceSpectrum(const float* spectrum) {
-        for(int i = 0; i < N_CIE_SAMPLES; i++) {
-            spectral_emittance_distribution[i] = spectrum[i];
+    void compute_spectral_distr(float* dev_sRGBToSpectrum_Data) {
+        switch (material_type) {
+        case EMISSIVE:
+            dev_srgb_to_illuminance_spectrum(col, spectral_distribution, emission_power, dev_sRGBToSpectrum_Data);
+            break;
+        default:
+            dev_srgb_to_spectrum(col, spectral_distribution, dev_sRGBToSpectrum_Data);
+            break;
         }
     }
 
     __device__
-    void setReflectanceSpectrum(const float* spectrum) {
+    void setSpectralDistribution(const float* spectrum) {
         for(int i = 0; i < N_CIE_SAMPLES; i++) {
-            spectral_reflectance_distribution[i] = spectrum[i];
+            spectral_distribution[i] = spectrum[i];
         }
     }
 
     __device__
     static material emissive(const color emitted, const float power = 1.0f) {
-        return material(color(1.0f, 1.0f, 1.0f), 1.0f, emitted, 1.0f, power, EMISSIVE);
+        return material(emitted, 1.0f, 1.0f, power, EMISSIVE);
     }
 
     __device__
-    static material lambertian(const color albedo) {
-        return material(albedo,  1.0f, color(0.0f, 0.0f, 0.0f), 1.0f, 0.0f, LAMBERTIAN);
+    static material lambertian(const color col) {
+        return material(col,  1.0f, 1.0f, 0.0f, LAMBERTIAN);
     }
 
     __device__
-    static material metallic(const color albedo, const float fuzz) {
-        return material(albedo, fuzz, color(0.0f, 0.0f, 0.0f), 1.0f, 0.0f, METALLIC);
+    static material metallic(const color col, const float fuzz) {
+        return material(col, fuzz, 1.0f, 0.0f, METALLIC);
     }
     __device__
     static material dielectric(const float b[3], const float c[3]) {
-        return material(color(1.0f, 1.0, 1.0f), 1.0f, color(0.0f, 0.0f, 0.0f), b, c, 0.0f, DIELECTRIC);
+        return material(color(1.0f, 1.0, 1.0f), 1.0f, b, c, 0.0f, DIELECTRIC);
     }
 
     __device__
     static material dielectric_const(const float ir) {
-        return material(color(1.0f, 1.0, 1.0f), 1.0f, color(0.0f, 0.0f, 0.0f), ir, 0.0f, DIELECTRIC_CONST);
+        return material(color(1.0f, 1.0, 1.0f), 1.0f, ir, 0.0f, DIELECTRIC_CONST);
     }
 
     __device__
-    static material normal_test(color albedo) {
-        return material(albedo, 1.0f, color(0.0f, 0.0f, 0.0f), 1.0f, 0.0f, NORMAL_TEST);
+    static material normal_test(color col) {
+        return material(col, 1.0f, 1.0f, 0.0f, NORMAL_TEST);
     }
 
     __device__
     const bool scatter(ray &r_in, const hit_record &rec, curandState *local_rand_state) const;
 
     //TODO: maybe find a way to move data into shared memory?
-    color albedo;
-    color emitted;
+    color col;
     float reflection_fuzz;
     uint material_type;
-    float spectral_reflectance_distribution[N_CIE_SAMPLES];
-    float spectral_emittance_distribution[N_CIE_SAMPLES];
+    float spectral_distribution[N_CIE_SAMPLES];
     float emission_power;
 
     //Sellemeier's equation coefficients
