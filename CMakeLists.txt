@@ -49,9 +49,7 @@ add_executable(spectral-rt-project
         image/image.cpp
         rendering/render_manager.cu
         _log_/log_context.cpp
-        io/params.cpp
-        primitives/hit_record.cuh
-)
+        io/params.cpp)
 
 set_target_properties(spectral-rt-project PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
