@@ -6,6 +6,7 @@
 #include "render_manager.cuh"
 #include "log_context.h"
 #include "params.h"
+#include <cuda_profiler_api.h> 
 
 #define SAMPLES_PER_PIXEL 100
 #define BOUNCE_LIMIT 10
@@ -24,6 +25,7 @@ bool render_cycle(render_manager& rm, frame_buffer& fb, uchar_img& dst_image, im
 
 		std::clog << "Rendering... ";
 
+		cudaProfilerStart();
 		if (multithread) {
 			rm.render_cycle();
 			bool has_data = true;
@@ -52,6 +54,7 @@ bool render_cycle(render_manager& rm, frame_buffer& fb, uchar_img& dst_image, im
 				}
 			} while (has_data);
 		}
+		cudaProfilerStop();
 
 		stop = clock();
 		double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
