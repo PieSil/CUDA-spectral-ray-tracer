@@ -18,16 +18,16 @@ enum MAT_TYPE {
     METALLIC,
     DIELECTRIC,
     DIELECTRIC_CONST,
-    GENERIC,
     EMISSIVE,
-    NORMAL_TEST
+    NORMAL_TEST,
+    NO_MAT
 };
 
 class material {
 public:
     __host__ __device__
     material() : albedo(1.0f, 1.0f, 1.0f), reflection_fuzz(1.0f), emitted(0.0f, 0.0f, 0.0f),
-                 material_type(MAT_TYPE::LAMBERTIAN), emission_power(0.0f) {
+                 material_type(MAT_TYPE::NO_MAT), emission_power(0.0f) {
         for (int i = 0; i < 3; i++) {
             sellmeier_B[i] = 0.f;
             sellmeier_C[i] = 0.f;
