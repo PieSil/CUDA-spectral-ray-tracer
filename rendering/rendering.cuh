@@ -73,7 +73,7 @@ public:
     void init_device_params(dim3 _threads, dim3 _blocks, uint _max_chunk_width, uint _max_chunk_height);
 
 	__device__
-		static void ray_bounce(ray& r, const float* background_emittance_spectrum, bvh** bvh, uint bounce_limit, bvh_node* node_cache, curandState* local_rand_state);
+		static void ray_bounce(const uint t_in_block_idx, bool do_something, ray& r, const float* background_emittance_spectrum, uint bounce_limit, hit_record* shared_hit_records, bvh_node* node_cache, curandState* local_rand_state);
 
 	__device__
 		static ray get_ray(uint i, uint j, const point3 pixel00_loc, const vec3 pixel_delta_u, const vec3 pixel_delta_v,

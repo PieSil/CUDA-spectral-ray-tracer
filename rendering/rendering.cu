@@ -5,26 +5,33 @@
 #include "rendering.cuh"
 
 __device__
-void renderer::ray_bounce(ray &r, const float *background_emittance_spectrum, bvh** bvh, const uint bounce_limit, bvh_node* node_cache, curandState* local_rand_state) {
+void renderer::ray_bounce(const uint t_in_block_idx, bool do_something, ray &r, const float *background_emittance_spectrum, const uint bounce_limit, hit_record* shared_hit_records, bvh_node* bvh_root, curandState* local_rand_state) {
 
-
-    hit_record rec;
+    bool stop_bouncing = !do_something;
+    hit_record* hit_rec = &shared_hit_records[t_in_block_idx];
 
     for (int n_bounces = 0; n_bounces < bounce_limit; n_bounces++) {
 
-        if (!bvh::hit(r, 0.0f, FLT_MAX, rec, &node_cache[0], (*bvh)->is_valid())) {
+        if (!stop_bouncing && !bvh::hit(r, 0.0f, FLT_MAX, (*hit_rec), bvh_root)) {
+            //hit_rec->mat = nullptr;
             r.mul_spectrum(background_emittance_spectrum);
-
-            return; //background * attenuation;
+            stop_bouncing = true;
+            //return; //background * attenuation;
         }
 
-        if (!rec.mat->scatter(r, rec, local_rand_state)) {
-            return;
+        if (!stop_bouncing && !hit_rec->mat->scatter(r, (*hit_rec), local_rand_state)) {
+            //hit_rec->mat = nullptr;
+            stop_bouncing = true;
+            //return;
         }
+
+        //stop_bouncing = hit_rec->mat == nullptr;
     }
 
-    for(int i = 0; i < N_RAY_WAVELENGTHS; i++) {
-        r.power_distr[i] = 0.0f;
+    if (!stop_bouncing) {
+        for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
+            r.power_distr[i] = 0.0f;
+        }
     }
 }
 
@@ -138,19 +145,19 @@ spectral_render_kernel(vec3 *fb, bvh **bvh, uint width, uint height, uint offset
     uint i = threadIdx.x + blockIdx.x * blockDim.x; //col idx
     uint j = threadIdx.y + blockIdx.y * blockDim.y; //row idx
 
-    if((i >= width) || j >= height)
-        return;
-
     uint pixel_index = j*width + i;
+    bool do_something = true;
 
     //INITIALIZE SHARED MEMORY HERE IF NEEDED
 
     extern __shared__ char array[];
 
-    uint thread_in_block_idx = threadIdx.x*blockDim.y + threadIdx.y;
+    uint thread_in_block_idx = threadIdx.y*blockDim.x + threadIdx.x;
 
     bvh_node* bvh_node_cache = (bvh_node*)(&array[0]);
-    float* sh_background_spectrum = (float*)(&array[BVH_NODE_CACHE_SIZE*sizeof(bvh_node)]);
+    hit_record* shared_hit_records = (hit_record*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node)]);
+    float* sh_background_spectrum = (float*)(&array[BVH_NODE_CACHE_SIZE*sizeof(bvh_node) + (blockDim.x * blockDim.y * sizeof(hit_record))]);
+    uint* hit_record_indices = (uint*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (blockDim.x * blockDim.y * sizeof(hit_record)) + N_CIE_SAMPLES*sizeof(float)]);
 
     if (thread_in_block_idx == 0) {
         for(int k = 0; k < N_CIE_SAMPLES; k++) {
@@ -162,6 +169,9 @@ spectral_render_kernel(vec3 *fb, bvh **bvh, uint width, uint height, uint offset
            (*bvh)->to_shared(bvh_node_cache, BVH_NODE_CACHE_SIZE);
         }
     }
+
+    shared_hit_records[thread_in_block_idx] = hit_record();
+    hit_record_indices[thread_in_block_idx] = thread_in_block_idx;
 //    uint thread_in_block_idx = threadIdx.x*blockDim.y + threadIdx.y;
 //    int *light_indices = (int *) array;
 
@@ -186,30 +196,38 @@ spectral_render_kernel(vec3 *fb, bvh **bvh, uint width, uint height, uint offset
 
     __syncthreads();
 
+    if ((i >= width) || j >= height)
+        do_something = false; //do not drop threads as they are needed for material sorting in "ray_bounce"
+
     curandState local_rand_state = rand_state[pixel_index];
     color pixel_color;
 
-    //TODO: one thread per sample?
-    for (int k = 0; k < samples_per_pixel; k++) {
-        /*
-        * trace the ray from camera center to current pixel sample
-        * then sum the sample color obtained from the spectrum to current pixel
-        */
-        ray r = renderer::get_ray(offset_x + i, offset_y + j, cam_data.pixel00_loc, cam_data.pixel_delta_u, cam_data.pixel_delta_v,
-                        cam_data.camera_center, cam_data.defocus_disk_u, cam_data.defocus_disk_v,
-                        cam_data.defocus_angle, &local_rand_state);
+    if ((*bvh)->is_valid()) {
+        //TODO: one thread per sample?
+        for (int k = 0; k < samples_per_pixel; k++) {
+            /*
+            * trace the ray from camera center to current pixel sample
+            * then sum the sample color obtained from the spectrum to current pixel
+            */
 
-        
-        renderer::ray_bounce(r, sh_background_spectrum, bvh, bounce_limit, bvh_node_cache, &local_rand_state);
+            //putting do something check here increases register per thread and makes no difference performance wise
+            ray r = renderer::get_ray(offset_x + i, offset_y + j, cam_data.pixel00_loc, cam_data.pixel_delta_u, cam_data.pixel_delta_v,
+                    cam_data.camera_center, cam_data.defocus_disk_u, cam_data.defocus_disk_v,
+                    cam_data.defocus_angle, &local_rand_state);
 
-        pixel_color += dev_spectrum_to_XYZ(r.wavelengths, r.power_distr, N_RAY_WAVELENGTHS);
+
+            renderer::ray_bounce(thread_in_block_idx, do_something, r, sh_background_spectrum, bounce_limit, shared_hit_records, &bvh_node_cache[0], &local_rand_state);
+
+           //putting do something check here increases register per thread and makes little difference performance wise
+           pixel_color += dev_spectrum_to_XYZ(r.wavelengths, r.power_distr, N_RAY_WAVELENGTHS);
+        }
     }
 
     //save updated rand state in random state array for future use
     rand_state[pixel_index] = local_rand_state;
 
-
-    save_to_fb(pixel_color, pixel_index, samples_per_pixel, fb);
+    if (do_something)
+        save_to_fb(pixel_color, pixel_index, samples_per_pixel, fb);
     //save_to_fb(pixel_color, pixel_index, samples_per_pixel, fb);
 }
 
@@ -267,8 +285,12 @@ void renderer::init_device_params(dim3 _threads, dim3 _blocks, uint _max_chunk_w
     cout << "shared_bg_size is " << shared_bg_size << endl;
     uint node_cache_size = BVH_NODE_CACHE_SIZE * sizeof(bvh_node);
     cout << "node_cache_size is " << node_cache_size << endl;
+    uint shared_hit_rec_size = threads.x * threads.y * sizeof(hit_record);
+    cout << "shared_hit_rec_size is " << shared_hit_rec_size << endl;
+    uint shared_hit_rec_indices_size = threads.x * threads.y * sizeof(uint);
+    cout << "shared_hit_rec_indices_size is " << shared_hit_rec_indices_size << endl;
 
-    shared_mem_size = shared_bg_size + node_cache_size;
+    shared_mem_size = shared_bg_size + node_cache_size + shared_hit_rec_size + shared_hit_rec_indices_size;
     uint max_num_pixels = max_chunk_width * max_chunk_height;
     checkCudaErrors(cudaMalloc((void**)&dev_fb, max_num_pixels * sizeof(vec3)));
     checkCudaErrors(cudaGetLastError());
