@@ -15,6 +15,8 @@ using namespace std;
 
 typedef unsigned int uint;
 
+typedef unsigned short int short_uint;
+
 //Constants
 
 const float infinity = numeric_limits<float>::infinity();
