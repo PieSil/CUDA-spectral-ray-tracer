@@ -96,7 +96,7 @@ bool bvh::hit(const ray &r, float min, float max, hit_record &rec) const {
 }
 
 __device__
-bool bvh::hit(const ray &r, float min, float max, hit_record &rec, bvh_node* root) {
+bool bvh::hit(const ray &r, float min, float max, hit_record &rec, const bvh_node * const root) {
 
     bool hit_anything = false;
     float closest_so_far = max;
@@ -109,7 +109,7 @@ bool bvh::hit(const ray &r, float min, float max, hit_record &rec, bvh_node* roo
     *stack_ptr++ = nullptr; // push
 
     // Traverse nodes starting from the root.
-    bvh_node* node = root;
+    const bvh_node* node = root;
 
     if (node->is_leaf) {
         //only one element

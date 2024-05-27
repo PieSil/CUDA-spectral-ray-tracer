@@ -21,29 +21,6 @@
  * https://raytracing.github.io/books/RayTracingTheNextWeek.html#boundingvolumehierarchies/thebvhnodeclass
  */
 
-/*
-class hittable_bbox {
-    //a wrapper for the aabb class that allows to treat it as a hittable
-public:
-
-    __device__
-    explicit hittable_bbox(const aabb &bbox) : bbox(bbox) {}
-
-    __device__
-    bool hit(const ray &r, float min, float max, hit_record &rec) const {
-        return bbox.hit(r, min, max);
-    }
-
-    __host__ __device__
-    aabb bounding_box() const {
-        return bbox;
-    }
-
-private:
-    aabb bbox;
-};
- */
-
 class bvh_node {
 
 public:
@@ -189,7 +166,7 @@ public:
     bool hit(const ray &r, float min, float max, hit_record &rec) const;
 
     __device__
-    static bool hit(const ray& r, float min, float max, hit_record& rec, bvh_node* root);
+    static bool hit(const ray& r, float min, float max, hit_record& rec, const bvh_node * const root);
 
     __host__ __device__
     aabb bounding_box() const {
