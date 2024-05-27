@@ -73,7 +73,7 @@ public:
     void init_device_params(dim3 _threads, dim3 _blocks, uint _max_chunk_width, uint _max_chunk_height);
 
 	__device__
-		static void ray_bounce(const uint t_in_block_idx, bool do_something, ray& r, const float* background_emittance_spectrum, uint bounce_limit, hit_record* shared_hit_records, bvh_node* node_cache, curandState* local_rand_state);
+		static void ray_bounce(const short_uint t_in_block_idx, ray& r, const float * const background_emittance_spectrum, uint bounce_limit, hit_record * const shared_hit_records, const bvh_node * const bvh_root, curandState * const local_rand_state);
 
 	__device__
 		static ray get_ray(uint i, uint j, const point3 pixel00_loc, const vec3 pixel_delta_u, const vec3 pixel_delta_v,
@@ -94,7 +94,7 @@ public:
 
 private:
 	__host__
-	void call_render_kernel(uint width, uint height, uint offset_x, uint offset_y);
+	void call_render_kernel(short_uint width, short_uint height, short_uint offset_x, short_uint offset_y);
 
 	__host__
 	void assign_cam_data(camera* cam);
@@ -125,7 +125,7 @@ private:
     camera_data cam_data;
     bvh** dev_bvh;
     uint samples_per_pixel;
-    uint bounce_limit;
+    short_uint bounce_limit;
 	color background;
 
 	uint max_chunk_width;
