@@ -83,7 +83,7 @@ void render(bool multithread = true) {
 		uchar_img image = get_image(ch.r, ch.g, ch.b, width, height);
 		img_display disp = get_image_display("Render");
 
-		render_manager rm(sm.getWorld(), sm.getCamPtr(), fb.data);
+		render_manager rm(sm.getWorld(), sm.getCamPtr(), &fb);
 
 		auto pm = param_manager::getInstance();
 		rm.init_renderer(pm->getParams().getBounceLimit(), pm->getParams().getNSamples());

@@ -52,7 +52,9 @@ public:
 	~renderer() {
 		if (device_inited) {
 			checkCudaErrors(cudaFree(dev_rand_state));
-			checkCudaErrors(cudaFree(dev_fb));
+			checkCudaErrors(cudaFree(dev_fb_r));
+			checkCudaErrors(cudaFree(dev_fb_b));
+			checkCudaErrors(cudaFree(dev_fb_g));
 			checkCudaErrors(cudaFree(dev_background_spectrum));
 			checkCudaErrors(cudaGetLastError());
 		}
@@ -88,8 +90,16 @@ public:
 		return max_chunk_height;
 	}
 
-	const vec3* getDevFB() const {
-		return dev_fb;
+	const float* getDevFBr() const {
+		return dev_fb_r;
+	}
+
+	const float* getDevFBg() const {
+		return dev_fb_g;
+	}
+
+	const float*  getDevFBb() const {
+		return dev_fb_b;
 	}
 
 private:
@@ -133,7 +143,9 @@ private:
     dim3 blocks;
     dim3 threads;
     uint shared_mem_size;
-    vec3* dev_fb = nullptr;
+    float* dev_fb_r = nullptr;
+	float* dev_fb_g = nullptr;
+	float* dev_fb_b = nullptr;
     curandState* dev_rand_state = nullptr;
 
     float* dev_background_spectrum = nullptr;

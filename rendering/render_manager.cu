@@ -38,8 +38,11 @@ bool render_manager::step() {
 
 	r.render(last_chunk_width, last_chunk_height, offset_x, offset_y);
 
-	checkCudaErrors(cudaMemcpy(render_data->fb, r.getDevFB(), chunk_width * chunk_height * sizeof(vec3), cudaMemcpyDeviceToHost));
-	
+	size_t size = threads.x * blocks.x * threads.y * blocks.y * sizeof(float);
+
+	checkCudaErrors(cudaMemcpyAsync(render_data->fb_r, r.getDevFBr(), size/*chunk_width * chunk_height * sizeof(float)*/, cudaMemcpyDeviceToHost));
+	checkCudaErrors(cudaMemcpyAsync(render_data->fb_g, r.getDevFBg(), size/*chunk_width * chunk_height * sizeof(float)*/, cudaMemcpyDeviceToHost));
+	checkCudaErrors(cudaMemcpyAsync(render_data->fb_b, r.getDevFBb(), size/*chunk_width * chunk_height * sizeof(float)*/, cudaMemcpyDeviceToHost));
 
 	i++;
 	if (i == n_iterations) {
@@ -76,8 +79,8 @@ void render_manager::init_device_params(dim3 threads, dim3 blocks, uint _chunk_w
 		r.init_device_params(threads, blocks, chunk_width, chunk_height);
 		device_inited = true;
 
-		render_data_container[0].alloc_buffer(chunk_size);
-		render_data_container[1].alloc_buffer(chunk_size);
+		render_data_container[0].alloc_buffer(/*chunk_size*/threads.x * blocks.x * threads.y * blocks.y);
+		render_data_container[1].alloc_buffer(/*chunk_size*/threads.x * blocks.x * threads.y * blocks.y);
 
 		auto lc = log_context::getInstance();
 	}
@@ -90,8 +93,8 @@ void render_manager::init_device_params(uint _chunk_width, uint _chunk_height) {
 		uint tx = 16;
 		uint ty = 16;
 
-		dim3 blocks(_chunk_width / tx + 1, _chunk_height / ty + 1);
-		dim3 threads(tx, ty);
+		blocks = dim3(_chunk_width / tx + 1, _chunk_height / ty + 1);
+		threads = dim3(tx, ty);
 		this->init_device_params(threads, blocks, _chunk_width, _chunk_height);
 	}
 	else
@@ -107,8 +110,8 @@ void render_manager::init_device_params() {
 		uint tx = 16;
 		uint ty = 16;
 
-		dim3 blocks(width / tx + 1, height / ty + 1);
-		dim3 threads(tx, ty);
+		blocks = dim3(width / tx + 1, height / ty + 1);
+		threads = dim3(tx, ty);
 		this->init_device_params(threads, blocks, width, height);
 	}
 	else

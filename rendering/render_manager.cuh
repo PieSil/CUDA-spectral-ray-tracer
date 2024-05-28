@@ -11,16 +11,20 @@ struct render_step_data {
 	render_step_data() : empty(1), full(0) {}
 
 	void alloc_buffer(size_t buffer_size) {
-		fb = new vec3[buffer_size];
+		fb_r = new float[buffer_size];
+		fb_g = new float[buffer_size];
+		fb_b = new float[buffer_size];
 	}
 
 	~render_step_data() {
-		if (fb != nullptr) {
-			delete[] fb;
-		}
+		delete[] fb_r;
+		delete[] fb_g;
+		delete[] fb_b;
 	}
 
-	vec3* fb = nullptr;
+	float* fb_r = nullptr;
+	float* fb_g = nullptr;
+	float* fb_b = nullptr;
 	uint starting_offset_x = 0;
 	uint starting_offset_y = 0;
 	uint chunk_width = 0;
@@ -33,11 +37,13 @@ struct render_step_data {
 class render_manager {
 public:
 
-	render_manager(bvh** _dev_bvh, camera* _cam, vec3* _fb) {
+	render_manager(bvh** _dev_bvh, camera* _cam, frame_buffer* _fb) {
 		if (_dev_bvh != nullptr && _cam != nullptr && _fb != nullptr) {
 			dev_bvh = _dev_bvh;
 			cam = _cam;
-			fb = _fb;
+			fb_r = _fb->r;
+			fb_g = _fb->g;
+			fb_b = _fb->b;
 			image_width = cam->getImageWidth();
 			image_height = cam->getImageHeight();
 			scene_inited = true;
@@ -72,19 +78,64 @@ public:
 		size_t n_cols = render_data->chunk_width;
 		size_t offs_x = render_data->starting_offset_x;
 		size_t offs_y = render_data->starting_offset_y;
-		vec3* tmp_fb = render_data->fb;
+		float* tmp_fb_r = render_data->fb_r;
+		float* tmp_fb_g = render_data->fb_g;
+		float* tmp_fb_b = render_data->fb_b;
 
-		for (size_t row = 0; row < n_rows; row++) {
-			for (size_t col = 0; col < n_cols; col++) {
-				size_t tmp_pixel_index = row * n_cols + col;
-				size_t fb_pixel_index = (row + offs_y) * cam->getImageWidth() + (col + offs_x);
-				fb[fb_pixel_index] = tmp_fb[tmp_pixel_index];
+		uint block_size = threads.x * threads.y;
+		uint grid_size = blocks.x * blocks.y;
+		for (uint idx = 0; idx < block_size * grid_size; idx++) {
+			//compute index of the block that wrote this pixel
+			uint blockIdx = idx / block_size;
+
+			//get 2D indices of block
+			uint block_x = blockIdx % blocks.x;
+			uint block_y = blockIdx / blocks.x;
+
+			//compute specific index of thread that wrote this pixel
+			uint thread_idx = idx % block_size;
+
+			//get 2D indices of thread
+			uint thread_x = thread_idx % threads.x;
+			uint thread_y = thread_idx / threads.x;
+
+			//start from first pixel
+			uint fb_x = 0;
+			uint fb_y = 0;
+
+			//move right by the number of current block
+			fb_x += threads.x * block_x;
+
+			//sum thread idx along x
+			fb_x += thread_x;
+
+			//move down by the number of current block
+			fb_y += threads.y * block_y;
+
+			//sum thread idx along y
+			fb_y += thread_y;
+
+			//ensure current 2D pixel indices fit within the current chunk
+			if (fb_x < n_cols && fb_y < n_rows) {
+
+				//sum chunk offset
+				fb_x += offs_x;
+				fb_y += offs_y;
+
+				//linear access to frame buffer to store color
+				size_t fb_pixel_index = fb_y * cam->getImageWidth() + fb_x;
+
+				fb_r[fb_pixel_index] = tmp_fb_r[idx];
+				fb_g[fb_pixel_index] = tmp_fb_g[idx];
+				fb_b[fb_pixel_index] = tmp_fb_b[idx];
 			}
+
+
+
 		}
 
 		last_read = render_data->is_last;
-
-		render_data->empty.release();
+  		render_data->empty.release();
 
 		return !last_read;
 	}
@@ -136,7 +187,9 @@ private:
 
 	renderer r;
 	bool renderer_inited = false;
-	vec3* fb;
+	float* fb_r;
+	float* fb_g;
+	float* fb_b;
 	render_step_data render_data_container[2];
 	size_t next_write_render_data_index = 0;
 	size_t next_read_render_data_index = 0;
@@ -163,6 +216,9 @@ private:
 	uint last_chunk_width = 0;
 	uint last_chunk_height = 0;
 	thread render_worker;
+
+	dim3 threads;
+	dim3 blocks;
 };
 
 #endif
