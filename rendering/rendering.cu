@@ -5,18 +5,25 @@
 #include "rendering.cuh"
 
 __device__
-void renderer::ray_bounce(const short_uint t_in_block_idx, ray& r, const float* const background_emittance_spectrum, const uint bounce_limit, hit_record* const shared_hit_records, const bvh_node* const bvh_root, curandState* const local_rand_state) {
+void renderer::ray_bounce(const uint t_in_block_idx, ray& r, const uint bounce_limit, curandState* const local_rand_state) {
+	extern __shared__ char array[];
 
-	hit_record* hit_rec = &shared_hit_records[t_in_block_idx];
+	//hit_record* hit_rec = &shared_hit_records[t_in_block_idx];
+
+	//access shared memeory portion representing hit_records array
+	uint block_size = blockDim.x * blockDim.y;
+	hit_record* volatile hit_rec = (hit_record*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + t_in_block_idx * sizeof(hit_record)]);
+	//hit_record hit_rec;
 
 	for (int n_bounces = 0; n_bounces < bounce_limit; n_bounces++) {
 
-		if (!bvh::hit(r, 0.0f, FLT_MAX, (*hit_rec), bvh_root)) {
-			r.mul_spectrum(background_emittance_spectrum);
+		if (!bvh::hit(r, 0.0f, FLT_MAX, *hit_rec, (bvh_node*)(&array[0]))) {
+			//access portion of shared memory representing background
+			r.mul_spectrum((float*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (block_size * sizeof(hit_record))]));
 			return;
 		}
 
-		if (!hit_rec->mat->scatter(r, (*hit_rec), local_rand_state)) {
+		if (!hit_rec->mat->scatter(r, *hit_rec, local_rand_state)) {
 			return;
 		}
 
@@ -127,7 +134,7 @@ void render_init(int max_x, int max_y, curandState* rand_state) {
 }
 
 __device__
-void save_to_fb(color& pixel_color, const uint coalesced_global_idx, const uint samples_per_pixel, float * fb_r, float * fb_g, float * fb_b) {
+void save_to_fb(color& pixel_color, const uint coalesced_global_idx, const uint samples_per_pixel, float* fb_r, float* fb_g, float* fb_b) {
 
 	pixel_color = expand_sRGB(XYZ_to_sRGB(pixel_color / float(samples_per_pixel), reinterpret_cast<const float*>(dev_d65_XYZ_to_sRGB)));
 
@@ -149,20 +156,21 @@ spectral_render_kernel(float* fb_r, float* fb_g, float* fb_b, bvh** bvh, uint wi
 
 	uint block_size = blockDim.x * blockDim.y;
 	uint block_idx = blockIdx.y * gridDim.x + blockIdx.x;
-	uint thread_in_block_idx = threadIdx.y * blockDim.x + threadIdx.x;
 
+	uint thread_in_block_idx = threadIdx.y * blockDim.x + threadIdx.x;
 	uint coalesced_global_idx = thread_in_block_idx + block_size * block_idx;
 
 	//INITIALIZE SHARED MEMORY HERE IF NEEDED
 
-	extern __shared__ char array[];
-
-	bvh_node* bvh_node_cache = (bvh_node*)(&array[0]);
-	hit_record* shared_hit_records = (hit_record*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node)]);
-	ray* shared_rays = (ray*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (block_size * sizeof(hit_record))]);
-	float* sh_background_spectrum = (float*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (block_size * sizeof(hit_record))  + (block_size * sizeof(ray))]);
-
+	//ray* shared_rays = (ray*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (block_size * sizeof(hit_record))]);
 	if (thread_in_block_idx == 0) {
+		extern __shared__ char array[];
+
+		bvh_node* bvh_node_cache = (bvh_node*)(&array[0]);
+		//access shared memory portion representing background spectrum
+		float* sh_background_spectrum = (float*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (block_size * sizeof(hit_record)) /* + (block_size * sizeof(ray))*/]);
+
+		//write values from global memory
 		for (int k = 0; k < N_CIE_SAMPLES; k++) {
 			sh_background_spectrum[k] = background_spectrum[k];
 		}
@@ -173,6 +181,7 @@ spectral_render_kernel(float* fb_r, float* fb_g, float* fb_b, bvh** bvh, uint wi
 		}
 	}
 
+
 	__syncthreads();
 
 	if (i >= width || j >= height)
@@ -180,6 +189,7 @@ spectral_render_kernel(float* fb_r, float* fb_g, float* fb_b, bvh** bvh, uint wi
 
 	//coalesced (as much as possible, since curandState size is > 4 bytes) read from rand state array
 	curandState local_rand_state = rand_state[coalesced_global_idx];
+
 
 	color pixel_color;
 
@@ -190,13 +200,13 @@ spectral_render_kernel(float* fb_r, float* fb_g, float* fb_b, bvh** bvh, uint wi
 			* then sum the sample color obtained from the spectrum to current pixel
 			*/
 
-			shared_rays[thread_in_block_idx] = renderer::get_ray(offset_x + i, offset_y + j, cam_data.pixel00_loc, cam_data.pixel_delta_u, cam_data.pixel_delta_v,
+			ray r = renderer::get_ray(offset_x + i, offset_y + j, cam_data.pixel00_loc, cam_data.pixel_delta_u, cam_data.pixel_delta_v,
 				cam_data.camera_center, cam_data.defocus_disk_u, cam_data.defocus_disk_v,
 				cam_data.defocus_angle, &local_rand_state);
 
-			renderer::ray_bounce(thread_in_block_idx, shared_rays[thread_in_block_idx], sh_background_spectrum, bounce_limit, shared_hit_records, &bvh_node_cache[0], &local_rand_state);
+			renderer::ray_bounce(thread_in_block_idx, r, bounce_limit, &local_rand_state);
 
-			pixel_color += dev_spectrum_to_XYZ(shared_rays[thread_in_block_idx].wavelengths, shared_rays[thread_in_block_idx].power_distr, N_RAY_WAVELENGTHS);
+			pixel_color += dev_spectrum_to_XYZ(r.wavelengths, r.power_distr, N_RAY_WAVELENGTHS);
 		}
 	}
 
@@ -262,10 +272,10 @@ void renderer::init_device_params(dim3 _threads, dim3 _blocks, uint _max_chunk_w
 	cout << "node_cache_size is " << node_cache_size << endl;
 	uint shared_hit_rec_size = threads.x * threads.y * sizeof(hit_record);
 	cout << "shared_hit_rec_size is " << shared_hit_rec_size << endl;
-	uint shared_rays_size = threads.x * threads.y * sizeof(ray);
-	cout << "shared_rays_size is " << shared_rays_size << endl;
+	//uint shared_rays_size = threads.x * threads.y * sizeof(ray);
+	//cout << "shared_rays_size is " << shared_rays_size << endl;
 
-	shared_mem_size = shared_bg_size + node_cache_size + shared_hit_rec_size + shared_rays_size;
+	shared_mem_size = shared_bg_size + node_cache_size + shared_hit_rec_size /*+ shared_rays_size*/;
 	uint max_num_pixels = max_chunk_width * max_chunk_height;
 	//allocate red buffer
 	checkCudaErrors(cudaMalloc((void**)&dev_fb_r, /*max_num_pixels*/ threads.x * blocks.x * threads.y * blocks.y * sizeof(float)));
