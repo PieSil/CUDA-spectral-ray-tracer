@@ -86,11 +86,11 @@ color spectrum_to_XYZ(const float* spectrum, const float* power_distribution, in
  * @return the approximated XYZ color resulting from the sampled spectrum.
  */
 __device__
-color dev_spectrum_to_XYZ(const float * const spectrum, const float * const power_distribution, const int n_samples) {
-    float delta_lambda = (LAMBDA_MAX - LAMBDA_MIN) / float(n_samples);
+color dev_spectrum_to_XYZ(const float * const spectrum, const float * const power_distribution, const uint n_total_samples, const uint n_nonzero_samples) {
+    float delta_lambda = (LAMBDA_MAX - LAMBDA_MIN) / float(n_total_samples);
     float x = 0.0f, y = 0.0f, z = 0.0f;
 
-    for (int i = 0; i < n_samples; i++) {
+    for (int i = 0; i < n_nonzero_samples; i++) {
         float lambda = spectrum[i];
         float power = power_distribution[i];
         x += spectrum_interp(dev_cie_x, lambda) * power * delta_lambda;

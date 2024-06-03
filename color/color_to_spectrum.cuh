@@ -186,12 +186,12 @@ inline void dev_srgb_to_illuminance_spectrum(color srgb_color, float *sampled_sp
 }
 
 __host__
-inline void srgb_to_spectrum(color srgb_color, float *sampled_spectrum) {
-    float step = (LAMBDA_MAX - LAMBDA_MIN) / N_CIE_SAMPLES;
+inline void srgb_to_spectrum(color srgb_color, float *sampled_spectrum, const  uint n_samples = N_CIE_SAMPLES) {
+    float step = (LAMBDA_MAX - LAMBDA_MIN) / n_samples;
     vec3 coeffs = get_sigmoid_coeffs(srgb_color);
     float lambda = LAMBDA_MIN;
 
-    for (int i = 0; i < N_CIE_SAMPLES; i++) {
+    for (int i = 0; i < n_samples; i++) {
 
         float x = polynomial(lambda, coeffs.z(), coeffs.y(), coeffs.x());
         float sigmoid_x = sigmoid_inf_check(x);
@@ -202,12 +202,12 @@ inline void srgb_to_spectrum(color srgb_color, float *sampled_spectrum) {
 }
 
 __device__
-inline void dev_srgb_to_spectrum(color srgb_color, float *sampled_spectrum, float* dev_sRGBToSpectrumTable_Data) {
-    float step = (LAMBDA_MAX - LAMBDA_MIN) / N_CIE_SAMPLES;
+inline void dev_srgb_to_spectrum(color srgb_color, float *sampled_spectrum, float* dev_sRGBToSpectrumTable_Data, const  uint n_samples = N_CIE_SAMPLES) {
+    float step = (LAMBDA_MAX - LAMBDA_MIN) / n_samples;
     vec3 coeffs = dev_get_sigmoid_coeffs(srgb_color, dev_sRGBToSpectrumTable_Data);
     float lambda = LAMBDA_MIN;
 
-    for (int i = 0; i < N_CIE_SAMPLES; i++) {
+    for (int i = 0; i < n_samples; i++) {
 
         float x = polynomial(lambda, coeffs.z(), coeffs.y(), coeffs.x());
         float sigmoid_x = sigmoid_inf_check(x);

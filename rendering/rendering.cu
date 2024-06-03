@@ -19,7 +19,7 @@ void renderer::ray_bounce(const uint t_in_block_idx, ray& r, const uint bounce_l
 
 		if (!bvh::hit(r, 0.0f, FLT_MAX, *hit_rec, (bvh_node*)(&array[0]))) {
 			//access portion of shared memory representing background
-			r.mul_spectrum((float*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (block_size * sizeof(hit_record))]));
+			r.mul_spectrum((float*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (block_size * sizeof(hit_record))]), N_CIE_SAMPLES);
 			return;
 		}
 
@@ -29,9 +29,10 @@ void renderer::ray_bounce(const uint t_in_block_idx, ray& r, const uint bounce_l
 
 	}
 
-	for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
-		r.power_distr[i] = 0.0f;
-	}
+	//for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
+	//	r.power_distr[i] = 0.0f;
+	//}
+	r.valid_wavelengths = 0;
 
 }
 
@@ -114,7 +115,7 @@ ray renderer::get_ray_stratified_sample(uint i, uint j,
 };
 
 __global__
-void render_init(int max_x, int max_y, curandState* rand_state) {
+void init_random_states(int max_x, int max_y, curandState* rand_state) {
 	//uint i = threadIdx.x + blockIdx.x * blockDim.x;
 	//uint j = threadIdx.y + blockIdx.y * blockDim.y;
 
@@ -206,7 +207,7 @@ spectral_render_kernel(float* fb_r, float* fb_g, float* fb_b, bvh** bvh, uint wi
 
 			renderer::ray_bounce(thread_in_block_idx, r, bounce_limit, &local_rand_state);
 
-			pixel_color += dev_spectrum_to_XYZ(r.wavelengths, r.power_distr, N_RAY_WAVELENGTHS);
+			pixel_color += dev_spectrum_to_XYZ(r.wavelengths, r.power_distr, N_RAY_WAVELENGTHS, r.valid_wavelengths);
 		}
 	}
 
@@ -256,7 +257,7 @@ void renderer::call_render_kernel(short_uint width, short_uint height, short_uin
 };
 
 __host__
-void renderer::init_device_params(dim3 _threads, dim3 _blocks, uint _max_chunk_width, uint _max_chunk_height) {
+void renderer::init_device_params(const dim3 _threads, const dim3 _blocks, const uint _max_chunk_width, const uint _max_chunk_height) {
 	// Allocate Frame Buffer
 	//vec3* dev_fb = nullptr;
 	threads = _threads;
@@ -304,7 +305,10 @@ void renderer::init_device_params(dim3 _threads, dim3 _blocks, uint _max_chunk_w
 	checkCudaErrors(cudaDeviceSynchronize());
 
 	//initialize random state
-	render_init << <blocks, threads >> > (max_chunk_width, max_chunk_height, dev_rand_state);
+	init_random_states << <blocks, threads >> > (max_chunk_width, max_chunk_height, dev_rand_state);
+
+	//initialize intersection data buffer
+	//alloc_intersection_data << <1, 1 >> > (inters_data_buffer, n_streams, _threads.x * _threads.y, _blocks.x * _blocks.y);
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaDeviceSynchronize());
 
@@ -328,4 +332,18 @@ void renderer::init_device_params(dim3 _threads, dim3 _blocks, uint _max_chunk_w
 	cout << "Registers per thread: " << attr.numRegs << endl;
 
 	device_inited = true;
+}
+
+__host__
+void renderer::clean_device() {
+	if (device_inited) {
+		//dealloc_intersection_data << <1, 1 >> > (inters_data_buffer, n_streams);
+		//checkCudaErrors(cudaFree(inters_data_buffer));
+		checkCudaErrors(cudaFree(dev_rand_state));
+		checkCudaErrors(cudaFree(dev_fb_r));
+		checkCudaErrors(cudaFree(dev_fb_b));
+		checkCudaErrors(cudaFree(dev_fb_g));
+		checkCudaErrors(cudaFree(dev_background_spectrum));
+		checkCudaErrors(cudaGetLastError());
+	}
 }

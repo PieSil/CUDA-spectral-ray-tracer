@@ -28,7 +28,6 @@ const bool reflection_scatter(float mat_fuzz, vec3 unit_in_direction, const hit_
      * Sum a random vector centered on the reflected vector's endpoint scaled by the fuzz factor
      */
     scattered_direction = reflected + mat_fuzz * random_unit_vector(local_rand_state);
-    //attenuation = (attenuation * weight);
 
     /*
     * For big fuzz values the scattered ray may go below the surface,
@@ -56,101 +55,45 @@ const float reflectance(float cosine, float ref_idx) {
 __device__
 const bool material::scatter(ray& r_in, const hit_record& rec, curandState* local_rand_state) const {
     vec3 scatter_direction;
-    point3 scatter_origin = rec.p + EPSILON * rec.normal;
-    //    vec3 reflection_direction;
-    //    vec3 diffuse_direction;
-    bool did_scatter;
+    float epsilon_correction_sign = 1.0f;
+    bool did_scatter = true;
     vec3 unit_in_direction = unit_vector(r_in.direction());
-    //float random = cuda_random_float(local_rand_state);
-    float lambda;
-    float weight;
 
-    //TODO: UNIFY AS MUCH AS POSSIBLE
     switch (material_type) {
 
-    case NORMAL_TEST:
-        if (rec.front_face) {
-            r_in.mul_spectrum(spectral_distribution);
-            did_scatter = lambertian_scatter(rec, scatter_direction, local_rand_state);
-        }
-
-        else {
-            r_in.non_hero_to_zero();
-            r_in.power_distr[0] = 0.f;
-            did_scatter = false;
-        }
-        break;
-
         case METALLIC:
-            //TODO: check if total light reflection needs to be performed
-            
              
             did_scatter = reflection_scatter(reflection_fuzz, unit_in_direction, rec, scatter_direction,
                                             local_rand_state);
 
-            did_scatter ? r_in.mul_spectrum(spectral_distribution) : r_in.mul_spectrum(0.0f);
+            if (!did_scatter)
+                r_in.valid_wavelengths = 0;
         break;
-
+        
         case DIELECTRIC:
             float ir = sellmeier_index(sellmeier_B, sellmeier_C, r_in.wavelengths[0]);
-            did_scatter = refraction_scatter(ir, r_in, rec, scatter_origin, scatter_direction, unit_in_direction,
-                local_rand_state, false);
+
+            bool refracted = refraction_scatter(ir, rec, epsilon_correction_sign, scatter_direction, unit_in_direction, local_rand_state);
+
+            if (refracted)
+                r_in.valid_wavelengths = 1;
             break;
-
-        case DIELECTRIC_CONST:
-            /* 
-             * Some notes regarding refraction_scatter args:
-             * 1) for DIELECTRIC_CONST material sellmeier_B[0] contains the refractive index.
-             * 2) passing "nullptr" as ray pointer avoids setting to 0 the power of the ray's "non-hero" wavelengths 
-             */
-
-
-            did_scatter = refraction_scatter(sellmeier_B[0], r_in, rec, scatter_origin, scatter_direction, unit_in_direction,
-                local_rand_state);
-
-        break;
+       
 
         case EMISSIVE:
-            /*
-            weight = spectrum_interp(spectral_emittance_distribution, r_in.wavelength);
-
-            if (random > weight)
-                new_wl = 0.0f;
-            */
-            r_in.mul_spectrum(spectral_distribution);
 
             did_scatter = false;
             break;
 
         case LAMBERTIAN:
         default:
-            r_in.mul_spectrum(spectral_distribution);
 
-//            for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
-//                r_in.wl_pdf[i] /= sum_pdf;
-//            }
-
-            did_scatter = lambertian_scatter(rec, scatter_direction, local_rand_state);
+            lambertian_scatter(rec, scatter_direction, local_rand_state);
             break;
     }
 
-//    if (try_refract(mat.ir, rec, unit_in_direction, refraction_ratio, local_rand_state, transmittance)){
-//        refraction_scatter(rec, final_direction, unit_in_direction, vec3(), nullptr);
-//        did_scatter = (dot(scattered.direction(), rec.normal ) > 0);
-//    } else {
-//        lambertian_scatter(rec, scatter_direction, attenuation, local_rand_state);
-//        reflection_scatter(r_in, rec, reflect_direction, attenuation);
-//
-//        //interpolate directions based on shininess factor
-//        final_direction = mat.reflection_fuzz * reflect_direction + (1 - mat.reflection_fuzz) * scatter_direction;
-//
-//        /*
-//         * For big fuzz values the scattered ray may go below the surface,
-//         * if this happens just let the surface absorb the ray
-//         */
-
-
-    r_in.orig = scatter_origin;
+    r_in.mul_spectrum(spectral_distribution, N_CIE_SAMPLES);
+    r_in.orig = rec.p + epsilon_correction_sign * EPSILON * rec.normal;
     r_in.dir = scatter_direction;
 
     return did_scatter;
@@ -158,19 +101,18 @@ const bool material::scatter(ray& r_in, const hit_record& rec, curandState* loca
 
     __device__
     const bool
-    refraction_scatter(const float mat_ir, ray& r_in, const hit_record &rec, point3 &scatter_origin, vec3 &scatter_direction,
-                       const vec3 unit_in_direction, curandState *local_rand_state, bool const_ir_flag)
+    refraction_scatter(const float mat_ir, const hit_record &rec, float &epsilon_correction_sign, vec3 &scatter_direction, const vec3 unit_in_direction,
+                       curandState *local_rand_state)
 
     {
-        
-        //attenuation = attenuation * color(1.0f, 1.0f, 1.0f); //no attenuation
         float refraction_ratio = rec.front_face ? (1.0f/mat_ir) : mat_ir;
 
         //check if Snell's law has solution or not (refraction_ratio * sin_theta must be <= 1)
         float cos_theta = fmin(dot(-unit_in_direction, rec.normal), 1.0f);
         float sin_theta = sqrt(1.0f - cos_theta * cos_theta);
 
-        bool cannot_refract = refraction_ratio * sin_theta > 1.0f;
+        bool cannot_refract = refraction_ratio * sin_theta > 1.0f || reflectance(cos_theta, refraction_ratio) > cuda_random_float(local_rand_state);
+
 
 
         /*
@@ -178,21 +120,64 @@ const bool material::scatter(ray& r_in, const hit_record& rec, curandState* loca
          * since cuda_random_float() generates values in [0.0, 1.0) with a uniform distribution we have that the greater
          * the reflectance index the more likely it will be to refract instead of reflect
          */
-
-
-        if (cannot_refract || reflectance(cos_theta, refraction_ratio) > cuda_random_float(local_rand_state)) {
+        if (cannot_refract) {
             scatter_direction = reflect(unit_in_direction, rec.normal);
 
             // scatter_origin = rec.p + EPSILON * rec.normal;
         } else {
             scatter_direction = refract(unit_in_direction, rec.normal, refraction_ratio);
 
-            if (!const_ir_flag) {
-                r_in.non_hero_to_zero();
-                //r_in.disable_non_hero();
-            }
-            scatter_origin = rec.p - EPSILON * rec.normal;
+            epsilon_correction_sign = -1.0f;
         }
 
-        return true;
+
+
+        return !cannot_refract;
+    }
+
+    __device__
+        bool material::unified_scatter(ray& r_in, const hit_record& rec, curandState* local_rand_state) const {
+        vec3 lambertian_scatter_direction;
+        vec3 metallic_scatter_direction;
+        vec3 dielectric_scatter_direction;
+        float epsilon_correction_sign = 1.0f;
+        bool did_scatter;
+        vec3 unit_in_direction = unit_vector(r_in.direction());
+        
+        did_scatter = reflection_scatter(reflection_fuzz, unit_in_direction, rec, metallic_scatter_direction, local_rand_state);
+        bool refracted = refraction_scatter(sellmeier_index(sellmeier_B, sellmeier_C, r_in.wavelengths[0]), rec, epsilon_correction_sign, dielectric_scatter_direction, unit_in_direction, local_rand_state);
+        lambertian_scatter(rec, lambertian_scatter_direction, local_rand_state);
+
+        float lambertian_weight = 0.0f;
+        float metallic_weight = 0.0f;
+        float dielectric_weight = 0.0f;
+
+        switch (material_type) {
+        case LAMBERTIAN:
+            lambertian_weight = 1.0f;
+            did_scatter = true;
+            break;
+        case METALLIC:
+            metallic_weight = 1.0f;
+            if (!did_scatter)
+                r_in.valid_wavelengths = 0;
+            break;
+        case DIELECTRIC:
+            dielectric_weight = 1.0f;
+            did_scatter = true;
+            if (refracted)
+                r_in.valid_wavelengths = 1;
+            break;
+        case EMISSIVE:
+            did_scatter = false;
+        default:
+        }
+
+        //if material is dielectric apply computed correction sign, otherwise correction sign is always 1
+        r_in.orig = rec.p + (dielectric_weight * epsilon_correction_sign + (1.f-dielectric_weight)) * EPSILON * rec.normal;
+        //choose scatter direction based on weight
+        r_in.dir = lambertian_weight * lambertian_scatter_direction + metallic_weight * metallic_scatter_direction + dielectric_weight * dielectric_scatter_direction;
+        r_in.mul_spectrum(spectral_distribution, N_CIE_SAMPLES);
+
+        return did_scatter;
     }

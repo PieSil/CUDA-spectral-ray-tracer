@@ -16,9 +16,9 @@
 #define LAMBERTIAN 0
 #define METALLIC 1
 #define DIELECTRIC 2
-#define DIELECTRIC_CONST 3
+//#define DIELECTRIC_CONST 3
 #define EMISSIVE 4
-#define NORMAL_TEST 5
+//#define NORMAL_TEST 5
 #define NO_MAT 6
 
 /*
@@ -74,6 +74,9 @@ public:
         case EMISSIVE:
             dev_srgb_to_illuminance_spectrum(col, spectral_distribution, emission_power, dev_sRGBToSpectrum_Data);
             break;
+        case DIELECTRIC:
+            setSpectralDistribution(1.0f);
+            break;
         default:
             dev_srgb_to_spectrum(col, spectral_distribution, dev_sRGBToSpectrum_Data);
             break;
@@ -84,6 +87,13 @@ public:
     void setSpectralDistribution(const float* spectrum) {
         for(int i = 0; i < N_CIE_SAMPLES; i++) {
             spectral_distribution[i] = spectrum[i];
+        }
+    }
+
+    __device__
+        void setSpectralDistribution(const float value) {
+        for (int i = 0; i < N_CIE_SAMPLES; i++) {
+            spectral_distribution[i] = value;
         }
     }
 
@@ -106,18 +116,25 @@ public:
         return material(color(1.0f, 1.0, 1.0f), 1.0f, b, c, 0.0f, DIELECTRIC);
     }
 
+    /*
     __device__
     static material dielectric_const(const float ir) {
         return material(color(1.0f, 1.0, 1.0f), 1.0f, ir, 0.0f, DIELECTRIC_CONST);
     }
+    */
 
+    /*
     __device__
     static material normal_test(color col) {
         return material(col, 1.0f, 1.0f, 0.0f, NORMAL_TEST);
     }
+    */
 
     __device__
     const bool scatter(ray &r_in, const hit_record &rec, curandState *local_rand_state) const;
+
+    __device__
+    bool unified_scatter(ray& r_in, const hit_record& rec, curandState* local_rand_state) const;
 
     //TODO: maybe find a way to move data into shared memory?
     color col;
@@ -129,13 +146,14 @@ public:
     //Sellemeier's equation coefficients
     float sellmeier_B[3]; //value at index 0 is reused as the refractive index in case of DIELECTRIC_CONST material
     float sellmeier_C[3];
+    
 };
 
 
 
 __device__
-const bool refraction_scatter(float mat_ir, ray& r_in, const hit_record &rec, point3 &scatter_origin, vec3 &scatter_direction,
-                   vec3 unit_in_direction, curandState *local_rand_state, bool const_ir_flag = true);
+const bool refraction_scatter(float mat_ir, const hit_record &rec, float &epsilon_correction_sign, vec3 &scatter_direction, vec3 unit_in_direction,
+                   curandState *local_rand_state);
 
 __device__
 const float reflectance(float cosine, float ref_idx);

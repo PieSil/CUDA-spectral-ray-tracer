@@ -6,7 +6,6 @@
 #define SPECTRAL_RT_PROJECT_RENDERING_CUH
 
 #include "cuda_utility.cuh"
-#include "color.cuh"
 #include "bvh.cuh"
 #include "io.cuh"
 #include "camera.cuh"
@@ -50,14 +49,7 @@ public:
 	}
 
 	~renderer() {
-		if (device_inited) {
-			checkCudaErrors(cudaFree(dev_rand_state));
-			checkCudaErrors(cudaFree(dev_fb_r));
-			checkCudaErrors(cudaFree(dev_fb_b));
-			checkCudaErrors(cudaFree(dev_fb_g));
-			checkCudaErrors(cudaFree(dev_background_spectrum));
-			checkCudaErrors(cudaGetLastError());
-		}
+		clean_device();
 	}
 
 	void render(uint offset_x, uint offset_y) {
@@ -103,6 +95,10 @@ public:
 	}
 
 private:
+
+	__host__
+		void clean_device();
+
 	__host__
 	void call_render_kernel(short_uint width, short_uint height, short_uint offset_x, short_uint offset_y);
 
@@ -151,6 +147,8 @@ private:
     float* dev_background_spectrum = nullptr;
 
     bool device_inited = false;
+
+	uint n_streams;
 };
 
 __host__ __device__

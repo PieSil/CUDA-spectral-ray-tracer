@@ -60,7 +60,7 @@ namespace scene {
 		void device_prism_test(tri** d_list, material** d_mat_list);
 
 	__device__
-		void device_tri_world(tri** d_list, material** d_mat_list);
+		void device_different_mats_world(tri** d_list, material** d_mat_list);
 
 	/*
 	__device__
@@ -93,7 +93,7 @@ namespace scene {
 
 	
 	__host__
-		camera_builder tris_camera_builder();
+		camera_builder different_mats_camera_builder();
 	
 	/*
 	__host__

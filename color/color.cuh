@@ -30,7 +30,7 @@ __host__
 color spectrum_to_XYZ(const float* spectrum, float* power_distribution, int n_samples);
 
 __device__
-color dev_spectrum_to_XYZ(const float * const spectrum, const float * const power_distribution, const int n_samples);
+color dev_spectrum_to_XYZ(const float * const spectrum, const float * const power_distribution, const uint n_valid_samples, const uint n_nonzero_samples);
 
 __host__
 void write_color(std::ostream &out, color pixel_color);

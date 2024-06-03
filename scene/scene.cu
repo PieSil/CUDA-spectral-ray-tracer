@@ -52,7 +52,7 @@ void create_world_kernel(uint world_selector, tri** d_list, material** d_mat_lis
 			 */
 
 		case TRIS:
-			device_tri_world(d_list, d_mat_list);
+			device_different_mats_world(d_list, d_mat_list);
 			break;
 
 		case CORNELL:
@@ -239,11 +239,11 @@ void scene::device_cornell_box(tri** d_list, material** d_mat_list) {
 	tri** light_faces = &d_list[10];
 
 	//walls
-	tri_quad bottom = tri_quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[3], bottom_faces);
-	tri_quad back = tri_quad(point3(0, 0, 555.f), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[3], back_faces);
-	tri_quad top = tri_quad(point3(555, 555, 555), vec3(-555, 0, 0), vec3(0, 0, -555), d_mat_list[3], top_faces);
-	tri_quad left = tri_quad(point3(555, 0, 0), vec3(0, 0, 555), vec3(0, 555, 0), d_mat_list[1], left_faces);
-	tri_quad right = tri_quad(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[6], right_faces);
+	tri_quad bottom(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[3], bottom_faces);
+	tri_quad back(point3(0, 0, 555.f), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[3], back_faces);
+	tri_quad top(point3(555, 555, 555), vec3(-555, 0, 0), vec3(0, 0, -555), d_mat_list[3], top_faces);
+	tri_quad left(point3(555, 0, 0), vec3(0, 0, 555), vec3(0, 555, 0), d_mat_list[1], left_faces);
+	tri_quad right(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[6], right_faces);
 
 	//light
 	point3 center = vec3(555.f / 2.f, 554.f, 555.f / 2.f);
@@ -252,7 +252,7 @@ void scene::device_cornell_box(tri** d_list, material** d_mat_list) {
 	float height = 150.f;
 	float margin = 1.5f;
 	point3 Q = point3((center.x() + width / 2.f), center.y(), (center.z() + depth / 2.f));
-	tri_quad light = tri_quad(Q, vec3(-width, 0, 0), vec3(0, 0, -depth), d_mat_list[4], light_faces);
+	tri_quad light(Q, vec3(-width, 0, 0), vec3(0, 0, -depth), d_mat_list[4], light_faces);
 	//tri_quad light = tri_quad(point3(343, 554, 332), vec3(-130, 0, 0), vec3(0, 0, -105), d_mat_list[4], light_faces);
 
 	/*
@@ -263,12 +263,12 @@ void scene::device_cornell_box(tri** d_list, material** d_mat_list) {
 	*/
 
 	//others
-	tri_box box1 = tri_box(point3(0.f, 0.f, 0.f), point3(165.f, 330.f, 165.f), d_mat_list[5], &d_list[12]);
+	tri_box box1(point3(0.f, 0.f, 0.f), point3(165.f, 330.f, 165.f), d_mat_list[5], &d_list[12]);
 	box1.rotate(degrees_to_radians(25.f), transform::AXIS::Y, false);
 	box1.translate(vec3(265.f, 0.f, 295.f));
 
 
-	tri_box box2 = tri_box(point3(0.f, 0.f, 0.f), point3(165.f, 165.f, 165.f), d_mat_list[0], &d_list[24]);
+	tri_box box2(point3(0.f, 0.f, 0.f), point3(165.f, 165.f, 165.f), d_mat_list[0], &d_list[24]);
 	box2.rotate(degrees_to_radians(-18.f), transform::AXIS::Y, false);
 	box2.translate(vec3(130.f, 0.f, 65.f));
 
@@ -300,11 +300,11 @@ void scene::device_prism_test(tri** d_list, material** d_mat_list) {
 	tri** right_faces = &d_list[8];
 	tri** light_faces = &d_list[10];
 
-	tri_quad bottom = tri_quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[0], bottom_faces);
-	tri_quad back = tri_quad(point3(0, 0, 555.f), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[0], back_faces);
-	tri_quad top = tri_quad(point3(555, 555, 555), vec3(-555, 0, 0), vec3(0, 0, -555), d_mat_list[0], top_faces);
-	tri_quad left = tri_quad(point3(555, 0, 0), vec3(0, 0, 555), vec3(0, 555, 0), d_mat_list[0], left_faces);
-	tri_quad right = tri_quad(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[0], right_faces);
+	tri_quad bottom(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[0], bottom_faces);
+	tri_quad back(point3(0, 0, 555.f), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[0], back_faces);
+	tri_quad top(point3(555, 555, 555), vec3(-555, 0, 0), vec3(0, 0, -555), d_mat_list[0], top_faces);
+	tri_quad left(point3(555, 0, 0), vec3(0, 0, 555), vec3(0, 555, 0), d_mat_list[0], left_faces);
+	tri_quad right(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[0], right_faces);
 
 	//walls
 	/*
@@ -326,7 +326,7 @@ void scene::device_prism_test(tri** d_list, material** d_mat_list) {
 
 	point3 Q = point3((center.x() + width / 2.f), center.y(), (center.z() + depth / 2.f));
 	//d_list[5] = new quad(Q, vec3(-width, 0, 0), vec3(0, 0, -depth), d_mat_list[1]); //light
-	tri_quad light = tri_quad(Q, vec3(-width, 0, 0), vec3(0, 0, -depth), d_mat_list[1], light_faces);
+	tri_quad light(Q, vec3(-width, 0, 0), vec3(0, 0, -depth), d_mat_list[1], light_faces);
 	/*
 	hittable** light_back_sides = &d_list[12];
 	hittable** light_front_sides = &d_list[14];
@@ -356,7 +356,7 @@ void scene::device_prism_test(tri** d_list, material** d_mat_list) {
 	// w = (0.f, 0.f, prism_height);
 	// 
 	//prism p = prism(point3(0.f, 0.f, 0.f), point3(prism_width, 0.f, 0.f), point3(prism_width / 2.f, 0.f, (prism_width * sqrt(3.f)) / 2.f), point3(0.f, -200.f, 0.f), d_mat_list[2], prism_sides);
-	/*NICE*/ prism p = prism(point3(center.x() - width / 2.f, center.y() - 1.f, center.z() - prism_height / 2.f), point3(0.f, -prism_width, 0.f), point3((prism_width * sqrt(3.f)) / 2.f, -prism_width / 2.f, 0.f), point3(0.f, 0.f, 200.f), d_mat_list[2], prism_sides);
+	/*NICE*/ prism p(point3(center.x() - width / 2.f, center.y() - 1.f, center.z() - prism_height / 2.f), point3(0.f, -prism_width, 0.f), point3((prism_width * sqrt(3.f)) / 2.f, -prism_width / 2.f, 0.f), point3(0.f, 0.f, 200.f), d_mat_list[2], prism_sides);
 	//prism p = prism(point3(center.x() - width / 2.f, center.y() - 1.f, center.z() - prism_height / 2.f), point3(0.f, -prism_width, 0.f), point3((prism_width * sqrt(3.f)) / 2.f, -prism_width / 2.f, 0.f), point3(0.f, 0.f, 200.f), d_mat_list[2], prism_sides);
 	p.rotate(degrees_to_radians(10.f), transform::AXIS::Y, true);
 
@@ -382,23 +382,25 @@ void scene::device_prism_test(tri** d_list, material** d_mat_list) {
 }
 
 __device__
-void scene::device_tri_world(tri** d_list, material** d_mat_list) {
+void scene::device_different_mats_world(tri** d_list, material** d_mat_list) {
 	d_mat_list[0] = new material();
 	*d_mat_list[0] = material::lambertian(color(.65f, .05f, .05f)); //red
-	//*d_mat_list[0] = material::normal_test(color(.65f, .05f, .05f)); //red
 	d_mat_list[1] = new material();
-	//*d_mat_list[1] = material::lambertian(color(.05f, .65f, .05f)); //green
-	*d_mat_list[1] = material::lambertian(color(.05f, .65f, .05f)); //green
+	*d_mat_list[1] = material::lambertian(color(.12f, .45f, .15f)); //green
 	d_mat_list[2] = new material();
-	//*d_mat_list[2] = material::lambertian(color(.05f, .05f, .65f)); //blue
-	//*d_mat_list[2] = material::dielectric_const(1.5f); //glass
 	*d_mat_list[2] = material::dielectric(dev_flint_glass_b, dev_flint_glass_c);
 	d_mat_list[3] = new material();
-	//*d_mat_list[3] = material::lambertian(color(.75f, .75f, .75f)); //white
-	*d_mat_list[3] = material::lambertian(color(.75f, .75f, .75f)); //white
+	*d_mat_list[3] = material::lambertian(color(.73f, .73f, .73f)); //white
 	d_mat_list[4] = new material();
-	//*d_mat_list[3] = material::lambertian(color(.75f, .75f, .75f)); //white
-	*d_mat_list[4] = material::emissive(color(1.f, 1.f, 1.f), 8.f); //light
+	*d_mat_list[4] = material::emissive(color(1.f, 1.f, 1.f), 5.f); //light
+	d_mat_list[5] = new material();
+	*d_mat_list[5] = material::metallic(color(.5f, .5f, .5f), 0.3f); //metal
+	d_mat_list[6] = new material();
+	*d_mat_list[6] = material::lambertian(color(.12f, .15f, .45f)); //blue
+	d_mat_list[7] = new material();
+	*d_mat_list[7] = material::dielectric(dev_BK7_b, dev_BK7_c);
+	d_mat_list[8] = new material();
+	*d_mat_list[8] = material::metallic(color(.7f, .7f, .7f), 0.8f); //metal
 
 	tri** bottom_faces = &d_list[0];
 	tri** top_faces = &d_list[2];
@@ -407,12 +409,22 @@ void scene::device_tri_world(tri** d_list, material** d_mat_list) {
 	tri** right_faces = &d_list[8];
 	tri** light_faces = &d_list[10];
 
-	tri_quad bottom = tri_quad(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[3], bottom_faces);
-	tri_quad back = tri_quad(point3(0, 0, 555.f), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[3], back_faces);
-	tri_quad top = tri_quad(point3(555, 555, 555), vec3(-555, 0, 0), vec3(0, 0, -555), d_mat_list[3], top_faces);
-	tri_quad left = tri_quad(point3(555, 0, 0), vec3(0, 0, 555), vec3(0, 555, 0), d_mat_list[1], left_faces);
-	tri_quad right = tri_quad(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[0], right_faces);
-	tri_quad light = tri_quad(point3(343, 554, 332), vec3(-130, 0, 0), vec3(0, 0, -105), d_mat_list[4], light_faces);
+	//walls
+	tri_quad bottom(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[6], bottom_faces);
+	tri_quad back(point3(0, 0, 555.f), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[1], back_faces);
+	tri_quad top(point3(555, 555, 555), vec3(-555, 0, 0), vec3(0, 0, -555), d_mat_list[2], top_faces);
+	tri_quad left(point3(555, 0, 0), vec3(0, 0, 555), vec3(0, 555, 0), d_mat_list[8], left_faces);
+	tri_quad right(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[5], right_faces);
+
+	//light
+	point3 center = vec3(555.f / 2.f, 554.f, 555.f / 2.f);
+	float width = 100.f;
+	float depth = 100.f;
+	float height = 150.f;
+	float margin = 1.5f;
+	point3 Q = point3((center.x() + width / 2.f), center.y(), (center.z() + depth / 2.f));
+	tri_quad light(Q, vec3(-width, 0, 0), vec3(0, 0, -depth), d_mat_list[4], light_faces);
+	//tri_quad light = tri_quad(point3(343, 554, 332), vec3(-130, 0, 0), vec3(0, 0, -105), d_mat_list[4], light_faces);
 
 	/*
 	hittable** box_1_tris = &d_list[12];
@@ -421,16 +433,23 @@ void scene::device_tri_world(tri** d_list, material** d_mat_list) {
 	hittable** box_3_tris = &d_list[48];
 	*/
 
-	tri_box box1 = tri_box(point3(0.f, 0.f, 0.f), point3(165.f, 330.f, 165.f), d_mat_list[3], &d_list[12]);
-	box1.rotate(degrees_to_radians(15.f), transform::AXIS::Y, false);
+	//others
+
+	material* mat_arr_1[6] = { d_mat_list[3], d_mat_list[8], d_mat_list[0],  d_mat_list[1], d_mat_list[2], d_mat_list[3] };
+	tri_box box1(point3(0.f, 0.f, 0.f), point3(165.f, 330.f, 165.f), mat_arr_1, &d_list[12]);
+	box1.rotate(degrees_to_radians(25.f), transform::AXIS::Y, false);
 	box1.translate(vec3(265.f, 0.f, 295.f));
 
-	tri_box box2 = tri_box(point3(0.f, 0.f, 0.f), point3(165.f, 165.f, 165.f), d_mat_list[2], &d_list[24]);
+	material* mat_arr_2[6] = {d_mat_list[7], d_mat_list[6], d_mat_list[8],  d_mat_list[7], d_mat_list[1], d_mat_list[2]};
+	tri_box box2(point3(0.f, 0.f, 0.f), point3(165.f, 165.f, 165.f), mat_arr_2, &d_list[24]);
 	box2.rotate(degrees_to_radians(-18.f), transform::AXIS::Y, false);
 	box2.translate(vec3(130.f, 0.f, 65.f));
 
-	tri_box air = tri_box(box2, d_mat_list[2], &d_list[36], 1.f);
-	air.flip_normals();
+
+
+	pyramid pyr(point3(165.f, 166.f, 0.f), vec3(-165.f, 0.f, 0.f), vec3(0.f, 0.f, 165.f), vec3(0.f, 165.f, 0.f), d_mat_list[2], &d_list[36]);
+	pyr.rotate(degrees_to_radians(-18.f), transform::AXIS::Y, false);
+	pyr.translate(vec3(130.f, 0.f, 65.f));
 }
 
 /*
@@ -505,8 +524,8 @@ void scene::init_world_parameters(uint world_selector, int* world_size_ptr, int*
 
 	case TRIS:
 		//tris
-		*world_size_ptr = 12 + 12 + 12 + 12;
-		*n_materials_ptr = 5;
+		*world_size_ptr = 10 + 2 + 12 + 12 + 6; //walls + light + box1 + box2 + pyramid + prism
+		*n_materials_ptr = 9;
 		break;
 
 	case CORNELL:
@@ -608,7 +627,7 @@ camera_builder scene::cornell_box_camera_builder() {
 }
 
 __host__
-camera_builder scene::tris_camera_builder() {
+camera_builder scene::different_mats_camera_builder() {
 	float vfov = 40.0f;
 	point3 lookfrom = point3(278, 278, -800);
 	point3 lookat = point3(278, 278, 0);
@@ -808,7 +827,7 @@ void scene_manager::init_camera() {
 		break;
 		 */
 	case TRIS:
-		cam_builder = tris_camera_builder();
+		cam_builder = different_mats_camera_builder();
 		break;
 
 	case CORNELL:

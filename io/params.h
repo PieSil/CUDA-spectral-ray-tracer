@@ -16,7 +16,7 @@ typedef unsigned int uint;
 #define PRISM 1
 #define TRIS 2
 
-static const string sceneIdToStr[] = {"Cornell Box", "Prism World", "Triangles"};
+static const string sceneIdToStr[] = {"Cornell Box", "Prism World", "Different Materials"};
 
 class parameters {
 public:
