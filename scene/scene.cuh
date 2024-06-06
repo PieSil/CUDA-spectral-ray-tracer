@@ -38,29 +38,14 @@
 
 namespace scene {
 
-	/*
 	__device__
-	void device_random_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials);
-	*/
-
-	/*
-	__device__
-	void device_quad_world(hittable **d_list, material **d_mat_list);
-	*/
-
-	/*
-	__device__
-	void device_simple_light(hittable **d_list, material **d_mat_list);
-	 */
+		void device_cornell_box(tri** d_list, material* d_mat_list);
 
 	__device__
-		void device_cornell_box(tri** d_list, material** d_mat_list);
+		void device_prism_test(tri** d_list, material* d_mat_list);
 
 	__device__
-		void device_prism_test(tri** d_list, material** d_mat_list);
-
-	__device__
-		void device_different_mats_world(tri** d_list, material** d_mat_list);
+		void device_different_mats_world(tri** d_list, material* d_mat_list);
 
 	/*
 	__device__
@@ -104,10 +89,10 @@ namespace scene {
 		bool create_bvh(tri** d_world, size_t world_size, bvh** d_bvh);
 
 	__host__
-		void create_world(uint selected_world, tri** d_list, material** d_mat_list, int* world_size, int* n_materials, float* dev_sRGBToSpectrum_Data);
+		void create_world(uint selected_world, tri** d_list, material* d_mat_list, int* world_size, int* n_materials, float* dev_sRGBToSpectrum_Data);
 
 	__host__
-		void free_world(tri** d_list, bvh** dev_bvh, material** d_mat_list, int world_size,
+		void free_world(tri** d_list, bvh** dev_bvh, material* d_mat_list, int world_size,
 			int n_materials);
 
 	struct result {
@@ -150,6 +135,13 @@ namespace scene {
 				return nullptr;
 		}
 
+		material* getMaterials() {
+			if (world_inited)
+				return dev_mat_list;
+			else
+				return nullptr;
+		}
+
 		camera* getCamPtr() {
 			if (cam_inited)
 				return &cam;
@@ -172,7 +164,7 @@ namespace scene {
 		int* h_world_size_ptr = new int;
 
 		tri** dev_world;
-		material** dev_mat_list;
+		material* dev_mat_list;
 		bvh** dev_bvh;
 
 		camera cam;
