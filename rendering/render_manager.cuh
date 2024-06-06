@@ -37,9 +37,10 @@ struct render_step_data {
 class render_manager {
 public:
 
-	render_manager(bvh** _dev_bvh, camera* _cam, frame_buffer* _fb) {
-		if (_dev_bvh != nullptr && _cam != nullptr && _fb != nullptr) {
+	render_manager(bvh** _dev_bvh, material* _dev_mat_list, camera* _cam, frame_buffer* _fb) {
+		if (_dev_bvh != nullptr && _dev_mat_list != nullptr && _cam != nullptr && _fb != nullptr) {
 			dev_bvh = _dev_bvh;
+			dev_mat_list = _dev_mat_list;
 			cam = _cam;
 			fb_r = _fb->r;
 			fb_g = _fb->g;
@@ -180,6 +181,7 @@ private:
 	}
 
 	bvh** dev_bvh;
+	material* dev_mat_list;
 	camera* cam;
 	uint image_width;
 	uint image_height;

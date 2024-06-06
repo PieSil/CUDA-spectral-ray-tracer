@@ -90,7 +90,7 @@ void render_manager::init_device_params(dim3 threads, dim3 blocks, uint _chunk_w
 
 void render_manager::init_device_params(uint _chunk_width, uint _chunk_height) {
 	if (renderer_inited) {
-		uint tx = 16;
+		uint tx = 28;
 		uint ty = 16;
 
 		blocks = dim3(_chunk_width / tx + 1, _chunk_height / ty + 1);
@@ -107,7 +107,7 @@ void render_manager::init_device_params() {
 		uint width = cam->getImageWidth();
 		uint height = cam->getImageHeight();
 
-		uint tx = 16;
+		uint tx = 28;
 		uint ty = 16;
 
 		blocks = dim3(width / tx + 1, height / ty + 1);
@@ -120,7 +120,7 @@ void render_manager::init_device_params() {
 
 void render_manager::init_renderer(uint bounce_limit, uint samples_per_pixel) {
 	if (scene_inited) {
-		r = renderer(dev_bvh, samples_per_pixel, cam, bounce_limit);
+		r = renderer(dev_bvh, dev_mat_list, samples_per_pixel, cam, bounce_limit);
 		auto lc = log_context::getInstance();
 		lc->add_entry("samples per pixel", samples_per_pixel);
 		lc->add_entry("bounce limit", bounce_limit);

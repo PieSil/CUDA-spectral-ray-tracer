@@ -26,7 +26,7 @@ public:
     tri() {}
 
     __device__ 
-    tri(const point3 v1, const point3 v2, const point3 v3, material* m, bool defer_init = false, CreationMode mode = VERTICES) : mat(m) {
+    tri(const point3 v1, const point3 v2, const point3 v3, const uint m_index, bool defer_init = false, CreationMode mode = VERTICES) : mat_index(m_index) {
         //aa_plane = AAPlane::NONE;
        
         v[0] = v1;
@@ -88,10 +88,9 @@ public:
     point3 v[3];
     bool clockwise; //whether the vertices follow a clockwise or counter-clockwise order inside the v array
     AAPlane aa_plane; //signals if the triangle lies on a plane parallel to the axis
-    material* mat;
+    uint mat_index;
     aabb bbox;
     vec3 normal;
-    //bool debug = false;
     float D;
 
 private:

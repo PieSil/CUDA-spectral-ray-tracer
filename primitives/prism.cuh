@@ -8,27 +8,27 @@ class prism {
 public:
 
 	__device__
-		prism(point3 Q, vec3 u, vec3 v, vec3 w, material* mats[5], tri** tris, const bool defer_init = false) {
-			tris[0] = new tri(Q, v, u, mats[0], defer_init, CreationMode::VECTORS); //u and v reverted in order to have outward normal
-			tris[1] = new tri(Q + w, u, v, mats[1], defer_init, CreationMode::VECTORS);
+		prism(point3 Q, vec3 u, vec3 v, vec3 w, const uint mat_idxs[5], tri** tris, const bool defer_init = false) {
+			tris[0] = new tri(Q, v, u, mat_idxs[0], defer_init, CreationMode::VECTORS); //u and v reverted in order to have outward normal
+			tris[1] = new tri(Q + w, u, v, mat_idxs[1], defer_init, CreationMode::VECTORS);
 			base[0] = tris[0];
 			base[1] = tris[1];
 
-			sides[0] = tri_quad(Q, u, w, mats[2], &tris[2], defer_init);
-			sides[1] = tri_quad(Q, w, v, mats[3], &tris[4], defer_init);
-			sides[2] = tri_quad(Q + u, v - u, w, mats[4], &tris[6], defer_init);
+			sides[0] = tri_quad(Q, u, w, mat_idxs[2], &tris[2], defer_init);
+			sides[1] = tri_quad(Q, w, v, mat_idxs[3], &tris[4], defer_init);
+			sides[2] = tri_quad(Q + u, v - u, w, mat_idxs[4], &tris[6], defer_init);
 	}
 
 	__device__
-		prism(point3 Q, vec3 u, vec3 v, vec3 w, material* m, tri** tris,  const bool defer_init = false) {
-			tris[0] = new tri(Q, v, u, m, defer_init, CreationMode::VECTORS); //bottom
-			tris[1] = new tri(Q + w, u, v, m, defer_init, CreationMode::VECTORS); //top
+		prism(point3 Q, vec3 u, vec3 v, vec3 w, const uint mat_index, tri** tris,  const bool defer_init = false) {
+			tris[0] = new tri(Q, v, u, mat_index, defer_init, CreationMode::VECTORS); //bottom
+			tris[1] = new tri(Q + w, u, v, mat_index, defer_init, CreationMode::VECTORS); //top
 			base[0] = tris[0];
 			base[1] = tris[1];
 
-			sides[0] = tri_quad(Q, u, w, m, &tris[2], defer_init);
-			sides[1] = tri_quad(Q, w, v, m, &tris[4], defer_init);
-			sides[2] = tri_quad(Q + u, v - u, w, m, &tris[6], defer_init);
+			sides[0] = tri_quad(Q, u, w, mat_index, &tris[2], defer_init);
+			sides[1] = tri_quad(Q, w, v, mat_index, &tris[4], defer_init);
+			sides[2] = tri_quad(Q + u, v - u, w, mat_index, &tris[6], defer_init);
 	}
 
 	__device__

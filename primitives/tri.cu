@@ -32,7 +32,7 @@ bool tri::hit(const ray& r, float min, float max, hit_record& rec) const {
 
     rec.t = t;
     rec.p = intersection;
-    rec.mat = mat;
+    rec.mat_index = mat_index;
     rec.set_face_normal(r, normal);
 
     /*

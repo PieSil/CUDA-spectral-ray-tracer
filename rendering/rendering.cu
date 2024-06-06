@@ -4,34 +4,37 @@
 
 #include "rendering.cuh"
 
+#define BVH_NODE_CACHE_BASE_INDEX 0
+#define SHARED_BG_SPECTRUM_BASE_INDEX bvh_node_cache_size * sizeof(bvh_node) + block_size * sizeof(hit_record) + shared_mats_size * sizeof(material)
+#define SHARED_MATERIALS_INDEX bvh_node_cache_size * sizeof(bvh_node) + block_size * sizeof(hit_record)
+#define SHARED_HITS_REC_BASE_IDX  bvh_node_cache_size * sizeof(bvh_node) 
+
 __device__
-void renderer::ray_bounce(const uint t_in_block_idx, ray& r, const uint bounce_limit, curandState* const local_rand_state) {
+void renderer::ray_bounce(material* material_list, const uint t_in_block_idx, ray& r, const uint bounce_limit, const uint bvh_node_cache_size, const uint shared_mats_size, curandState* const local_rand_state) {
 	extern __shared__ char array[];
 
-	//hit_record* hit_rec = &shared_hit_records[t_in_block_idx];
-
-	//access shared memeory portion representing hit_records array
 	uint block_size = blockDim.x * blockDim.y;
-	hit_record* volatile hit_rec = (hit_record*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + t_in_block_idx * sizeof(hit_record)]);
-	//hit_record hit_rec;
+	hit_record* volatile hit_rec = (hit_record*)&array[SHARED_HITS_REC_BASE_IDX + t_in_block_idx * sizeof(hit_record)];
+	float* sh_background_spectrum = (float*)&array[SHARED_BG_SPECTRUM_BASE_INDEX];
+	bvh_node* bvh_root = (bvh_node*)&array[BVH_NODE_CACHE_BASE_INDEX];
+	material* shared_mats = (material*)&array[SHARED_MATERIALS_INDEX];
 
 	for (int n_bounces = 0; n_bounces < bounce_limit; n_bounces++) {
 
-		if (!bvh::hit(r, 0.0f, FLT_MAX, *hit_rec, (bvh_node*)(&array[0]))) {
-			//access portion of shared memory representing background
-			r.mul_spectrum((float*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (block_size * sizeof(hit_record))]), N_CIE_SAMPLES);
+		if (!bvh::hit(r, 0.0f, FLT_MAX, *hit_rec, bvh_root)) {
+			r.mul_spectrum(sh_background_spectrum, N_CIE_SAMPLES);
 			return;
 		}
 
-		if (!hit_rec->mat->scatter(r, *hit_rec, local_rand_state)) {
+		const uint mat_index = hit_rec->mat_index;
+		const material* mat = &(shared_mats_size ? shared_mats[mat_index] : material_list[mat_index]);
+
+		if (!mat->scatter(r, *hit_rec, local_rand_state)) {
 			return;
 		}
 
 	}
 
-	//for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
-	//	r.power_distr[i] = 0.0f;
-	//}
 	r.valid_wavelengths = 0;
 
 }
@@ -147,7 +150,7 @@ void save_to_fb(color& pixel_color, const uint coalesced_global_idx, const uint 
 
 __global__
 void
-spectral_render_kernel(float* fb_r, float* fb_g, float* fb_b, bvh** bvh, uint width, uint height, uint offset_x, uint offset_y, camera_data cam_data, float* background_spectrum,
+spectral_render_kernel(float* fb_r, float* fb_g, float* fb_b, bvh** bvh, material* material_list, uint width, uint height, uint offset_x, uint offset_y, camera_data cam_data, const uint bvh_node_cache_size, const uint shared_mats_size, float* background_spectrum,
 	const short_uint samples_per_pixel, const short_uint bounce_limit, curandState* rand_state) {
 
 	uint i = threadIdx.x + blockIdx.x * blockDim.x; //col idx
@@ -162,23 +165,37 @@ spectral_render_kernel(float* fb_r, float* fb_g, float* fb_b, bvh** bvh, uint wi
 	uint coalesced_global_idx = thread_in_block_idx + block_size * block_idx;
 
 	//INITIALIZE SHARED MEMORY HERE IF NEEDED
+	/*
+	 * BVH NODE CACHE BASE INDEX: 0;
+	 * SHARED HIT RECORDS BASE INDEX: BVH_NODE_CACHE_SIZE * sizeof(bvh_node)
+	 * SHARED BACKGROUND SPECTRUM BASE INDEX: BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (block_size * sizeof(hit_record))
+	 */
 
-	//ray* shared_rays = (ray*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (block_size * sizeof(hit_record))]);
 	if (thread_in_block_idx == 0) {
+		/*
+		* #define SH_BVH_NODE_INDEX_PTR (uint*)&array[0];
+#define SH_SHARED_HITS_REC_INDEX_PTR (uint*)&array[1];
+#define SH_BG_SPECTRUM_INDEX_PTR (uint*)&array[2];
+		*/
 		extern __shared__ char array[];
 
-		bvh_node* bvh_node_cache = (bvh_node*)(&array[0]);
+		bvh_node* bvh_node_cache = (bvh_node*)&array[BVH_NODE_CACHE_BASE_INDEX];
 		//access shared memory portion representing background spectrum
-		float* sh_background_spectrum = (float*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (block_size * sizeof(hit_record)) /* + (block_size * sizeof(ray))*/]);
-
+		material* shared_mats = (material*)&array[SHARED_MATERIALS_INDEX];
+		float* sh_background_spectrum = (float*)(&array[SHARED_BG_SPECTRUM_BASE_INDEX]);
+		
 		//write values from global memory
 		for (int k = 0; k < N_CIE_SAMPLES; k++) {
 			sh_background_spectrum[k] = background_spectrum[k];
 		}
 
+		for (int k = 0; k < shared_mats_size; k++) {
+			shared_mats[k] = material_list[k];
+		}
+
 		//move higher level nodes to shared memory
 		if ((*bvh)->is_valid()) {
-			(*bvh)->to_shared(bvh_node_cache, BVH_NODE_CACHE_SIZE);
+			(*bvh)->to_shared(bvh_node_cache, bvh_node_cache_size);
 		}
 	}
 
@@ -205,7 +222,7 @@ spectral_render_kernel(float* fb_r, float* fb_g, float* fb_b, bvh** bvh, uint wi
 				cam_data.camera_center, cam_data.defocus_disk_u, cam_data.defocus_disk_v,
 				cam_data.defocus_angle, &local_rand_state);
 
-			renderer::ray_bounce(thread_in_block_idx, r, bounce_limit, &local_rand_state);
+			renderer::ray_bounce(material_list, thread_in_block_idx, r, bounce_limit, bvh_node_cache_size, shared_mats_size, &local_rand_state);
 
 			pixel_color += dev_spectrum_to_XYZ(r.wavelengths, r.power_distr, N_RAY_WAVELENGTHS, r.valid_wavelengths);
 		}
@@ -242,11 +259,14 @@ void renderer::call_render_kernel(short_uint width, short_uint height, short_uin
 
 	spectral_render_kernel << <blocks, threads, shared_mem_size >> > (dev_fb_r, dev_fb_g, dev_fb_b,
 		dev_bvh,
+		dev_mat_list,
 		width,
 		height,
 		offset_x,
 		offset_y,
 		cam_data,
+		BVH_NODE_CACHE_SIZE,
+		SHARED_MATERIAL_SIZE,
 		dev_background_spectrum,
 		samples_per_pixel,
 		bounce_limit,
@@ -273,10 +293,12 @@ void renderer::init_device_params(const dim3 _threads, const dim3 _blocks, const
 	cout << "node_cache_size is " << node_cache_size << endl;
 	uint shared_hit_rec_size = threads.x * threads.y * sizeof(hit_record);
 	cout << "shared_hit_rec_size is " << shared_hit_rec_size << endl;
+	uint shared_mats_size = SHARED_MATERIAL_SIZE * sizeof(material);
+	cout << "shared_mats_size is " << shared_mats_size << endl;
 	//uint shared_rays_size = threads.x * threads.y * sizeof(ray);
 	//cout << "shared_rays_size is " << shared_rays_size << endl;
 
-	shared_mem_size = shared_bg_size + node_cache_size + shared_hit_rec_size /*+ shared_rays_size*/;
+	shared_mem_size = shared_bg_size + node_cache_size + shared_hit_rec_size + shared_mats_size;
 	uint max_num_pixels = max_chunk_width * max_chunk_height;
 	//allocate red buffer
 	checkCudaErrors(cudaMalloc((void**)&dev_fb_r, /*max_num_pixels*/ threads.x * blocks.x * threads.y * blocks.y * sizeof(float)));

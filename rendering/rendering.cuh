@@ -14,6 +14,8 @@
 #include "camera.cuh"
 #include "log_context.h"
 
+#define SHARED_MATERIAL_SIZE 32
+
 struct camera_data {
 
     camera_data() {};
@@ -42,8 +44,8 @@ public:
 	renderer() {};
 
 	__host__
-	renderer(bvh** _bvh, uint _samples_per_pixel, camera* cam, uint _bounce_limit) :
-		dev_bvh(_bvh), samples_per_pixel(_samples_per_pixel), bounce_limit(_bounce_limit), background(cam->getBackground()) {
+	renderer(bvh** _bvh, material* _dev_mat_list, uint _samples_per_pixel, camera* cam, uint _bounce_limit) :
+		dev_bvh(_bvh), dev_mat_list(_dev_mat_list), samples_per_pixel(_samples_per_pixel), bounce_limit(_bounce_limit), background(cam->getBackground()) {
 		assign_cam_data(cam);
 
 	}
@@ -67,7 +69,7 @@ public:
     void init_device_params(dim3 _threads, dim3 _blocks, uint _max_chunk_width, uint _max_chunk_height);
 
 	__device__
-		static void ray_bounce(const uint t_in_block_idx, ray& r, uint bounce_limit, curandState * const local_rand_state);
+		static void ray_bounce(material* material_list, const uint t_in_block_idx, ray& r, uint bounce_limit, uint bvh_node_cache_size, const uint shared_mats_size, curandState * const local_rand_state);
 
 	__device__
 		static ray get_ray(uint i, uint j, const point3 pixel00_loc, const vec3 pixel_delta_u, const vec3 pixel_delta_v,
@@ -130,6 +132,7 @@ private:
 
     camera_data cam_data;
     bvh** dev_bvh;
+	material* dev_mat_list;
     uint samples_per_pixel;
     short_uint bounce_limit;
 	color background;

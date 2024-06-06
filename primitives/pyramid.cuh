@@ -6,18 +6,18 @@
 class pyramid {
 public:
 	__device__
-	pyramid(point3 Q, vec3 u, vec3 v, vec3 w, material* mats[5], tri** tris, const bool defer_init = false) {
-		base = tri_quad(Q, u, v, mats[0], &tris[0], defer_init);
+	pyramid(point3 Q, vec3 u, vec3 v, vec3 w, const uint mat_idxs[5], tri** tris, const bool defer_init = false) {
+		base = tri_quad(Q, u, v, mat_idxs[0], &tris[0], defer_init);
 		point3 top = base_center() + w;
 		point3 v0 = Q;
 		point3 v1 = Q + u;
 		point3 v2 = Q + v;
 		point3 v3 = v2 + u;
 
-		tris[2] = new tri(v0, top, v2, mats[1], defer_init, CreationMode::VERTICES);
-		tris[3] = new tri(v1, top, v0, mats[2], defer_init, CreationMode::VERTICES);
-		tris[4] = new tri(v2, top, v3, mats[3], defer_init, CreationMode::VERTICES);
-		tris[5] = new tri(v3, top, v1, mats[4], defer_init, CreationMode::VERTICES);
+		tris[2] = new tri(v0, top, v2, mat_idxs[1], defer_init, CreationMode::VERTICES);
+		tris[3] = new tri(v1, top, v0, mat_idxs[2], defer_init, CreationMode::VERTICES);
+		tris[4] = new tri(v2, top, v3, mat_idxs[3], defer_init, CreationMode::VERTICES);
+		tris[5] = new tri(v3, top, v1, mat_idxs[4], defer_init, CreationMode::VERTICES);
 
 		sides[0] = tris[2];
 		sides[1] = tris[3];
@@ -27,18 +27,18 @@ public:
 	}
 
 	__device__
-	pyramid(point3 Q, vec3 u, vec3 v, vec3 w, material* m, tri** tris, const bool defer_init = false) {
-		base = tri_quad(Q, u, v, m, &tris[0], defer_init);
+	pyramid(point3 Q, vec3 u, vec3 v, vec3 w, const uint mat_index, tri** tris, const bool defer_init = false) {
+		base = tri_quad(Q, u, v, mat_index, &tris[0], defer_init);
 		point3 top = base_center() + w;
 		point3 v0 = Q;
 		point3 v1 = Q + u;
 		point3 v2 = Q + v;
 		point3 v3 = v2 + u;
 
-		tris[2] = new tri(Q, top, v2, m, defer_init, CreationMode::VERTICES);
-		tris[3] = new tri(v1, top, Q, m, defer_init, CreationMode::VERTICES);
-		tris[4] = new tri(v2, top, v3, m, defer_init, CreationMode::VERTICES);
-		tris[5] = new tri(v3, top, v1, m, defer_init, CreationMode::VERTICES);
+		tris[2] = new tri(Q, top, v2, mat_index, defer_init, CreationMode::VERTICES);
+		tris[3] = new tri(v1, top, Q, mat_index, defer_init, CreationMode::VERTICES);
+		tris[4] = new tri(v2, top, v3, mat_index, defer_init, CreationMode::VERTICES);
+		tris[5] = new tri(v3, top, v1, mat_index, defer_init, CreationMode::VERTICES);
 
 		sides[0] = tris[2];
 		sides[1] = tris[3];
