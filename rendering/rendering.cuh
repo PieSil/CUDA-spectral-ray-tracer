@@ -67,7 +67,7 @@ public:
     void init_device_params(dim3 _threads, dim3 _blocks, uint _max_chunk_width, uint _max_chunk_height);
 
 	__device__
-		static void ray_bounce(const uint t_in_block_idx, ray& r, uint bounce_limit, curandState * const local_rand_state);
+		static void ray_bounce(uint t_in_block_idx, ray& r, uint bounce_limit, uint node_cache_size, curandState * const local_rand_state);
 
 	__device__
 		static ray get_ray(uint i, uint j, const point3 pixel00_loc, const vec3 pixel_delta_u, const vec3 pixel_delta_v,
@@ -97,7 +97,10 @@ public:
 private:
 
 	__host__
-		void clean_device();
+	void init_shared_mem_size();
+
+	__host__
+	void clean_device();
 
 	__host__
 	void call_render_kernel(short_uint width, short_uint height, short_uint offset_x, short_uint offset_y);
@@ -149,6 +152,7 @@ private:
     bool device_inited = false;
 
 	uint n_streams;
+	uint node_cache_size;
 };
 
 __host__ __device__

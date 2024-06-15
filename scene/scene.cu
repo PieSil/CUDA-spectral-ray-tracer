@@ -217,9 +217,9 @@ free_world_kernel(tri** d_list, material** d_mat_list, int world_size, int n_mat
 __device__
 void scene::device_cornell_box(tri** d_list, material** d_mat_list) {
 	d_mat_list[0] = new material();
-	*d_mat_list[0] = material::lambertian(color(.65f, .05f, .05f)); //red
+	*d_mat_list[0] = material::lambertian(color(.75f, .05f, .05f)); //red
 	d_mat_list[1] = new material();
-	*d_mat_list[1] = material::lambertian(color(.12f, .45f, .15f)); //green
+	*d_mat_list[1] = material::lambertian(color(.12f, .75f, .15f)); //green
 	d_mat_list[2] = new material();
 	*d_mat_list[2] = material::dielectric(dev_flint_glass_b, dev_flint_glass_c);
 	d_mat_list[3] = new material();
@@ -243,7 +243,7 @@ void scene::device_cornell_box(tri** d_list, material** d_mat_list) {
 	tri_quad back(point3(0, 0, 555.f), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[3], back_faces);
 	tri_quad top(point3(555, 555, 555), vec3(-555, 0, 0), vec3(0, 0, -555), d_mat_list[3], top_faces);
 	tri_quad left(point3(555, 0, 0), vec3(0, 0, 555), vec3(0, 555, 0), d_mat_list[1], left_faces);
-	tri_quad right(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[6], right_faces);
+	tri_quad right(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[0], right_faces);
 
 	//light
 	point3 center = vec3(555.f / 2.f, 554.f, 555.f / 2.f);
@@ -253,14 +253,6 @@ void scene::device_cornell_box(tri** d_list, material** d_mat_list) {
 	float margin = 1.5f;
 	point3 Q = point3((center.x() + width / 2.f), center.y(), (center.z() + depth / 2.f));
 	tri_quad light(Q, vec3(-width, 0, 0), vec3(0, 0, -depth), d_mat_list[4], light_faces);
-	//tri_quad light = tri_quad(point3(343, 554, 332), vec3(-130, 0, 0), vec3(0, 0, -105), d_mat_list[4], light_faces);
-
-	/*
-	hittable** box_1_tris = &d_list[12];
-	hittable** box_2_tris = &d_list[24];
-	hittable** air_tris = &d_list[36];
-	hittable** box_3_tris = &d_list[48];
-	*/
 
 	//others
 	tri_box box1(point3(0.f, 0.f, 0.f), point3(165.f, 330.f, 165.f), d_mat_list[5], &d_list[12]);

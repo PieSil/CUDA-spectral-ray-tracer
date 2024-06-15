@@ -5,21 +5,18 @@
 #include "rendering.cuh"
 
 __device__
-void renderer::ray_bounce(const uint t_in_block_idx, ray& r, const uint bounce_limit, curandState* const local_rand_state) {
+void renderer::ray_bounce(const uint t_in_block_idx, ray& r, const uint bounce_limit, const uint node_cache_size, curandState* const local_rand_state) {
 	extern __shared__ char array[];
-
-	//hit_record* hit_rec = &shared_hit_records[t_in_block_idx];
 
 	//access shared memeory portion representing hit_records array
 	uint block_size = blockDim.x * blockDim.y;
-	hit_record* volatile hit_rec = (hit_record*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + t_in_block_idx * sizeof(hit_record)]);
-	//hit_record hit_rec;
+	hit_record* volatile hit_rec = (hit_record*)(&array[node_cache_size * sizeof(bvh_node) + t_in_block_idx * sizeof(hit_record)]);
 
 	for (int n_bounces = 0; n_bounces < bounce_limit; n_bounces++) {
 
 		if (!bvh::hit(r, 0.0f, FLT_MAX, *hit_rec, (bvh_node*)(&array[0]))) {
 			//access portion of shared memory representing background
-			r.mul_spectrum((float*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (block_size * sizeof(hit_record))]), N_CIE_SAMPLES);
+			r.mul_spectrum((float*)(&array[node_cache_size * sizeof(bvh_node) + (block_size * sizeof(hit_record))]), N_CIE_SAMPLES);
 			return;
 		}
 
@@ -29,9 +26,6 @@ void renderer::ray_bounce(const uint t_in_block_idx, ray& r, const uint bounce_l
 
 	}
 
-	//for (int i = 0; i < N_RAY_WAVELENGTHS; i++) {
-	//	r.power_distr[i] = 0.0f;
-	//}
 	r.valid_wavelengths = 0;
 
 }
@@ -116,19 +110,12 @@ ray renderer::get_ray_stratified_sample(uint i, uint j,
 
 __global__
 void init_random_states(int max_x, int max_y, curandState* rand_state) {
-	//uint i = threadIdx.x + blockIdx.x * blockDim.x;
-	//uint j = threadIdx.y + blockIdx.y * blockDim.y;
 
 	uint block_size = blockDim.x * blockDim.y;
 	uint block_idx = blockIdx.y * gridDim.x + blockIdx.x;
 	uint thread_in_block_idx = threadIdx.y * blockDim.x + threadIdx.x;
 
 	uint coalesced_global_idx = thread_in_block_idx + block_size * block_idx;
-	//if ((i >= max_x) || (j >= max_y))
-	//	return;
-
-
-	//uint thread_index = j * max_x + i;
 
 	//Each thread gets different seed, same sequence number, no offset
 	curand_init(1984 + coalesced_global_idx, 0, 0, &rand_state[coalesced_global_idx]);
@@ -147,8 +134,7 @@ void save_to_fb(color& pixel_color, const uint coalesced_global_idx, const uint 
 
 __global__
 void
-spectral_render_kernel(float* fb_r, float* fb_g, float* fb_b, bvh** bvh, uint width, uint height, uint offset_x, uint offset_y, camera_data cam_data, float* background_spectrum,
-	const short_uint samples_per_pixel, const short_uint bounce_limit, curandState* rand_state) {
+spectral_render_kernel(float* fb_r, float* fb_g, float* fb_b, bvh** bvh, uint width, uint height, uint offset_x, uint offset_y, camera_data cam_data, float* background_spectrum, uint node_cache_size, const short_uint samples_per_pixel, const short_uint bounce_limit, curandState* rand_state) {
 
 	uint i = threadIdx.x + blockIdx.x * blockDim.x; //col idx
 	uint j = threadIdx.y + blockIdx.y * blockDim.y; //row idx
@@ -161,15 +147,14 @@ spectral_render_kernel(float* fb_r, float* fb_g, float* fb_b, bvh** bvh, uint wi
 	uint thread_in_block_idx = threadIdx.y * blockDim.x + threadIdx.x;
 	uint coalesced_global_idx = thread_in_block_idx + block_size * block_idx;
 
-	//INITIALIZE SHARED MEMORY HERE IF NEEDED
+	//Prepare shared memeory
 
-	//ray* shared_rays = (ray*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (block_size * sizeof(hit_record))]);
 	if (thread_in_block_idx == 0) {
 		extern __shared__ char array[];
 
 		bvh_node* bvh_node_cache = (bvh_node*)(&array[0]);
 		//access shared memory portion representing background spectrum
-		float* sh_background_spectrum = (float*)(&array[BVH_NODE_CACHE_SIZE * sizeof(bvh_node) + (block_size * sizeof(hit_record)) /* + (block_size * sizeof(ray))*/]);
+		float* sh_background_spectrum = (float*)(&array[node_cache_size * sizeof(bvh_node) + (block_size * sizeof(hit_record)) /* + (block_size * sizeof(ray))*/]);
 
 		//write values from global memory
 		for (int k = 0; k < N_CIE_SAMPLES; k++) {
@@ -178,7 +163,7 @@ spectral_render_kernel(float* fb_r, float* fb_g, float* fb_b, bvh** bvh, uint wi
 
 		//move higher level nodes to shared memory
 		if ((*bvh)->is_valid()) {
-			(*bvh)->to_shared(bvh_node_cache, BVH_NODE_CACHE_SIZE);
+			(*bvh)->to_shared(bvh_node_cache, node_cache_size);
 		}
 	}
 
@@ -205,7 +190,7 @@ spectral_render_kernel(float* fb_r, float* fb_g, float* fb_b, bvh** bvh, uint wi
 				cam_data.camera_center, cam_data.defocus_disk_u, cam_data.defocus_disk_v,
 				cam_data.defocus_angle, &local_rand_state);
 
-			renderer::ray_bounce(thread_in_block_idx, r, bounce_limit, &local_rand_state);
+			renderer::ray_bounce(thread_in_block_idx, r, bounce_limit, node_cache_size, &local_rand_state);
 
 			pixel_color += dev_spectrum_to_XYZ(r.wavelengths, r.power_distr, N_RAY_WAVELENGTHS, r.valid_wavelengths);
 		}
@@ -232,15 +217,7 @@ void renderer::call_render_kernel(short_uint width, short_uint height, short_uin
 		return;
 	}
 
-	// clock_t start, stop;
-	//start = clock();
-
-	/*
-	camera_data cam_data = camera_data(cam->getImageWidth(), cam->getImageHeight(), cam->getPixelDeltaU(), cam->getPixelDeltaV(),
-									   cam->getPixel00Loc(), cam->getDefocusAngle(), cam->getCenter(),
-									   cam->getDefocusDiskU(), cam->getDefocusDiskV());*/
-
-	spectral_render_kernel << <blocks, threads, shared_mem_size >> > (dev_fb_r, dev_fb_g, dev_fb_b,
+	spectral_render_kernel<<<blocks, threads, shared_mem_size>>> (dev_fb_r, dev_fb_g, dev_fb_b,
 		dev_bvh,
 		width,
 		height,
@@ -248,6 +225,7 @@ void renderer::call_render_kernel(short_uint width, short_uint height, short_uin
 		offset_y,
 		cam_data,
 		dev_background_spectrum,
+		node_cache_size,
 		samples_per_pixel,
 		bounce_limit,
 		dev_rand_state);
@@ -258,25 +236,14 @@ void renderer::call_render_kernel(short_uint width, short_uint height, short_uin
 
 __host__
 void renderer::init_device_params(const dim3 _threads, const dim3 _blocks, const uint _max_chunk_width, const uint _max_chunk_height) {
-	// Allocate Frame Buffer
-	//vec3* dev_fb = nullptr;
 	threads = _threads;
 	blocks = _blocks;
 	max_chunk_width = _max_chunk_width;
 	max_chunk_height = _max_chunk_height;
 
-	//    PREPARE SHARED MEMORY SIZE HERE
-
-	uint shared_bg_size = N_CIE_SAMPLES * sizeof(float);
-	cout << "shared_bg_size is " << shared_bg_size << endl;
-	uint node_cache_size = BVH_NODE_CACHE_SIZE * sizeof(bvh_node);
-	cout << "node_cache_size is " << node_cache_size << endl;
-	uint shared_hit_rec_size = threads.x * threads.y * sizeof(hit_record);
-	cout << "shared_hit_rec_size is " << shared_hit_rec_size << endl;
-	//uint shared_rays_size = threads.x * threads.y * sizeof(ray);
-	//cout << "shared_rays_size is " << shared_rays_size << endl;
-
-	shared_mem_size = shared_bg_size + node_cache_size + shared_hit_rec_size /*+ shared_rays_size*/;
+	// Determine shared memory size
+	init_shared_mem_size();
+	
 	uint max_num_pixels = max_chunk_width * max_chunk_height;
 	//allocate red buffer
 	checkCudaErrors(cudaMalloc((void**)&dev_fb_r, /*max_num_pixels*/ threads.x * blocks.x * threads.y * blocks.y * sizeof(float)));
@@ -334,11 +301,38 @@ void renderer::init_device_params(const dim3 _threads, const dim3 _blocks, const
 	device_inited = true;
 }
 
+void renderer::init_shared_mem_size() {
+
+	cudaDeviceProp device_props;
+	cudaGetDeviceProperties(&device_props, 0);
+	uint max_shared_mem_size = device_props.sharedMemPerBlock;
+
+	cout << "Max shared memory per block: " << max_shared_mem_size << endl;
+	
+	node_cache_size = BVH_NODE_CACHE_SIZE;
+	uint shared_bg_byte_size = N_CIE_SAMPLES * sizeof(float);
+	uint node_cache_byte_size = node_cache_size * sizeof(bvh_node);
+	uint shared_hit_rec_byte_size = threads.x * threads.y * sizeof(hit_record);
+	
+	shared_mem_size = shared_bg_byte_size + node_cache_byte_size + shared_hit_rec_byte_size;
+
+	//adjust node cache size until everything can fit into shared memory
+	while (shared_mem_size > max_shared_mem_size && node_cache_size > 0) {
+		node_cache_size /= 2;
+		node_cache_byte_size = node_cache_size * sizeof(bvh_node);
+		shared_mem_size = shared_bg_byte_size + node_cache_byte_size + shared_hit_rec_byte_size;
+	}
+
+	cout << "shared_bg_byte_size is " << shared_bg_byte_size << endl;
+	cout << "node_cache_byte_size is " << node_cache_byte_size << endl;
+	cout << "shared_hit_rec_byte_size is " << shared_hit_rec_byte_size << endl;
+
+
+}
+
 __host__
 void renderer::clean_device() {
 	if (device_inited) {
-		//dealloc_intersection_data << <1, 1 >> > (inters_data_buffer, n_streams);
-		//checkCudaErrors(cudaFree(inters_data_buffer));
 		checkCudaErrors(cudaFree(dev_rand_state));
 		checkCudaErrors(cudaFree(dev_fb_r));
 		checkCudaErrors(cudaFree(dev_fb_b));
