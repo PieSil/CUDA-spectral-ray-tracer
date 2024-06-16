@@ -60,7 +60,7 @@ ray renderer::get_ray(uint i, uint j, const point3 pixel00_loc, const vec3 pixel
 	curandState* local_rand_state) {
 	/*
 	 * Get a randomly sampled camera ray for the pixel at location i,j
-	 * originating from  a random point on the camera defocus disk
+	 * originating from a random point on the camera defocus disk
 	 * NOTE: ray direction is not a unit vector in order to have a simpler and slightly faster code
 	 */
 
@@ -295,8 +295,10 @@ void renderer::init_device_params(const dim3 _threads, const dim3 _blocks, const
 
 	cudaFuncAttributes attr;
 	cudaFuncGetAttributes(&attr, spectral_render_kernel);
+	/*
 	cout << "Max threads per block: " << attr.maxThreadsPerBlock << endl;
 	cout << "Registers per thread: " << attr.numRegs << endl;
+	*/
 
 	device_inited = true;
 }
@@ -307,7 +309,7 @@ void renderer::init_shared_mem_size() {
 	cudaGetDeviceProperties(&device_props, 0);
 	uint max_shared_mem_size = device_props.sharedMemPerBlock;
 
-	cout << "Max shared memory per block: " << max_shared_mem_size << endl;
+	// cout << "Max shared memory per block: " << max_shared_mem_size << endl;
 	
 	node_cache_size = BVH_NODE_CACHE_SIZE;
 	uint shared_bg_byte_size = N_CIE_SAMPLES * sizeof(float);
@@ -323,9 +325,11 @@ void renderer::init_shared_mem_size() {
 		shared_mem_size = shared_bg_byte_size + node_cache_byte_size + shared_hit_rec_byte_size;
 	}
 
+	/*
 	cout << "shared_bg_byte_size is " << shared_bg_byte_size << endl;
 	cout << "node_cache_byte_size is " << node_cache_byte_size << endl;
 	cout << "shared_hit_rec_byte_size is " << shared_hit_rec_byte_size << endl;
+	*/
 
 
 }
