@@ -22,12 +22,6 @@ public:
 		return channel_size * sizeof(float);
 	}
 
-	/*
-	const size_t total_byte_size() const {
-		return channel_size * sizeof(float) * 3;
-	}
-	*/
-
 	void split_channels(unsigned char* const _r, unsigned char* const _g, unsigned char* const _b) const {
 		for (size_t i = 0; i < channel_size; i++) {
 			_r[i] = static_cast<unsigned char>(r[i]);
