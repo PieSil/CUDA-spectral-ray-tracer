@@ -54,13 +54,16 @@ namespace scene {
 	 */
 
 	__device__
-		void device_cornell_box(tri** d_list, material** d_mat_list);
+		void device_test_scene(tri** d_list, material** d_mat_list);
 
 	__device__
 		void device_prism_test(tri** d_list, material** d_mat_list);
 
 	__device__
 		void device_different_mats_world(tri** d_list, material** d_mat_list);
+
+	__device__
+		void device_orig_cornell_box_scene(tri** d_list, material** d_mat_list);
 
 	/*
 	__device__
@@ -86,7 +89,7 @@ namespace scene {
 	*/
 
 	__host__
-		camera_builder cornell_box_camera_builder();
+		camera_builder test_scene_camera_builder();
 
 	__host__
 		camera_builder prism_test_camera_builder();
@@ -94,6 +97,9 @@ namespace scene {
 	
 	__host__
 		camera_builder different_mats_camera_builder();
+
+	__host__
+		camera_builder original_cornell_box_camera_builder();
 	
 	/*
 	__host__

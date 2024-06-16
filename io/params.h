@@ -12,11 +12,12 @@ using namespace std;
 
 typedef unsigned int uint;
 
-#define CORNELL 0
+#define TEST_SCENE 0
 #define PRISM 1
-#define TRIS 2
+#define DIFFERENT_MATS 2
+#define ORIG_CORNELL 3
 
-static const string sceneIdToStr[] = {"Cornell Box", "Prism World", "Different Materials"};
+static const string sceneIdToStr[] = {"Test Scene", "Prism World", "Different Materials", "Cornell Box"};
 
 class parameters {
 public:
@@ -201,7 +202,7 @@ private:
 	string log_subdir = "";
 
 	//world
-	uint scene = CORNELL;
+	uint scene = TEST_SCENE;
 
 	//image
 	uint xres = 600;
