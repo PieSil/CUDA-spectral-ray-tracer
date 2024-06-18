@@ -7,10 +7,10 @@
 __device__
 bool aabb::hit(const ray &r, float min, float max) const {
     /*
-         * check if a ray hits an AABB
-         * for each axis check if the ray passes through the corresponding slab (i.e. intervals defined by axis(a).min and max)
-         * if ray passes through all slabs then it hits the AABB
-         */
+     * check if a ray hits an AABB
+     * for each axis check if the ray passes through the corresponding slab (i.e. intervals defined by axis(a).min and max)
+     * if ray passes through all slabs then it hits the AABB
+     */
 
     for (int a = 0; a < 3; a++) {
 

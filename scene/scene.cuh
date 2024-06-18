@@ -38,21 +38,6 @@
 
 namespace scene {
 
-	/*
-	__device__
-	void device_random_world(hittable **d_list, material **d_mat_list, int *world_size, int *n_materials);
-	*/
-
-	/*
-	__device__
-	void device_quad_world(hittable **d_list, material **d_mat_list);
-	*/
-
-	/*
-	__device__
-	void device_simple_light(hittable **d_list, material **d_mat_list);
-	 */
-
 	__device__
 		void device_test_scene(tri** d_list, material** d_mat_list);
 
@@ -65,28 +50,8 @@ namespace scene {
 	__device__
 		void device_orig_cornell_box_scene(tri** d_list, material** d_mat_list);
 
-	/*
-	__device__
-	void device_3_spheres(tri **d_list, material** d_mat_list);
-	 */
-
 	__host__
 		void init_world_parameters(uint world_selector, int* world_size_ptr, int* n_materials_ptr);
-
-	/*
-	__host__
-		camera_builder random_world_cam_builder();
-	*/
-
-	/*
-	__host__
-		camera_builder quad_world_camera_builder();
-	*/
-
-	/*
-	__host__
-		camera_builder simple_light_camera_builder();
-	*/
 
 	__host__
 		camera_builder test_scene_camera_builder();
@@ -100,11 +65,6 @@ namespace scene {
 
 	__host__
 		camera_builder original_cornell_box_camera_builder();
-	
-	/*
-	__host__
-		camera_builder spheres_camera_builder();
-	*/
 
 	__host__
 		bool create_bvh(tri** d_world, size_t world_size, bvh** d_bvh);

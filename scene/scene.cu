@@ -141,12 +141,12 @@ void scene::device_prism_test(tri** d_list, material** d_mat_list) {
 	d_mat_list[2] = new material();
 	*d_mat_list[2] = material::dielectric(dev_flint_glass_b, dev_flint_glass_c);
 
+    //walls
 	tri** bottom_faces = &d_list[0];
 	tri** top_faces = &d_list[2];
 	tri** back_faces = &d_list[4];
 	tri** left_faces = &d_list[6];
 	tri** right_faces = &d_list[8];
-	tri** light_faces = &d_list[10];
 
 	tri_quad bottom(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[0], bottom_faces);
 	tri_quad back(point3(0, 0, 555.f), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[0], back_faces);
@@ -155,6 +155,7 @@ void scene::device_prism_test(tri** d_list, material** d_mat_list) {
 	tri_quad right(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[0], right_faces);
 
 	//light
+    tri** light_faces = &d_list[10];
 	point3 center = vec3(555.f / 2.f, 554.f, 555.f / 2.f);
 	float width = 100.f;
 	float depth = 100.f;
@@ -164,6 +165,7 @@ void scene::device_prism_test(tri** d_list, material** d_mat_list) {
 	point3 Q = point3((center.x() + width / 2.f), center.y(), (center.z() + depth / 2.f));
 	tri_quad light(Q, vec3(-width, 0, 0), vec3(0, 0, -depth), d_mat_list[1], light_faces);
 
+    //prism
 	tri** prism_sides = &d_list[12];
 	float prism_width = 165.f;
 	float prism_height = 200.f;
@@ -219,7 +221,6 @@ void scene::device_different_mats_world(tri** d_list, material** d_mat_list) {
 	tri_quad light(Q, vec3(-width, 0, 0), vec3(0, 0, -depth), d_mat_list[4], light_faces);
 
 	//others
-
 	material* mat_arr_1[6] = { d_mat_list[3], d_mat_list[8], d_mat_list[0],  d_mat_list[1], d_mat_list[2], d_mat_list[3] };
 	tri_box box1(point3(0.f, 0.f, 0.f), point3(165.f, 330.f, 165.f), mat_arr_1, &d_list[12]);
 	box1.rotate(degrees_to_radians(25.f), transform::AXIS::Y, false);
@@ -229,8 +230,6 @@ void scene::device_different_mats_world(tri** d_list, material** d_mat_list) {
 	tri_box box2(point3(0.f, 0.f, 0.f), point3(165.f, 165.f, 165.f), mat_arr_2, &d_list[24]);
 	box2.rotate(degrees_to_radians(-18.f), transform::AXIS::Y, false);
 	box2.translate(vec3(130.f, 0.f, 65.f));
-
-
 
 	pyramid pyr(point3(165.f, 166.f, 0.f), vec3(-165.f, 0.f, 0.f), vec3(0.f, 0.f, 165.f), vec3(0.f, 165.f, 0.f), d_mat_list[2], &d_list[36]);
 	pyr.rotate(degrees_to_radians(-18.f), transform::AXIS::Y, false);
@@ -248,14 +247,13 @@ void scene::device_orig_cornell_box_scene(tri** d_list, material** d_mat_list) {
 	d_mat_list[3] = new material();
 	*d_mat_list[3] = material::emissive(color(1.f, 1.f, 1.f), 5.f); //light
 
+    //walls
 	tri** bottom_faces = &d_list[0];
 	tri** top_faces = &d_list[2];
 	tri** back_faces = &d_list[4];
 	tri** left_faces = &d_list[6];
 	tri** right_faces = &d_list[8];
-	tri** light_faces = &d_list[10];
 
-	//walls
 	tri_quad bottom(point3(0, 0, 0), vec3(0, 0, 555), vec3(555, 0, 0), d_mat_list[2], bottom_faces);
 	tri_quad back(point3(0, 0, 555.f), vec3(0, 555, 0), vec3(555, 0, 0), d_mat_list[2], back_faces);
 	tri_quad top(point3(555, 555, 555), vec3(-555, 0, 0), vec3(0, 0, -555), d_mat_list[2], top_faces);
@@ -263,6 +261,7 @@ void scene::device_orig_cornell_box_scene(tri** d_list, material** d_mat_list) {
 	tri_quad right(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), d_mat_list[0], right_faces);
 
 	//light
+    tri** light_faces = &d_list[10];
 	point3 center = vec3(555.f / 2.f, 554.f, 555.f / 2.f);
 	float width = 100.f;
 	float depth = 100.f;
@@ -294,7 +293,7 @@ void scene::init_world_parameters(uint world_selector, int* world_size_ptr, int*
 	case PRISM:
 		//prism test
 		*world_size_ptr = 10 + 2 + 8; //walls + light + prism
-		*n_materials_ptr = 3; //white + emission + dielectric
+		*n_materials_ptr = 3;
 		break;
 
 	case DIFFERENT_MATS:
@@ -327,7 +326,6 @@ camera_builder scene::test_scene_camera_builder() {
 	float defocus_angle = 0.0f;
 	float focus_dist = 10.0f;
 	color background = color(0.0f, 0.0f, 0.0f);
-	//color background = color(0.70, 0.80, 1.00);
 
 	return camera_builder().
 		setVfov(vfov).
@@ -348,7 +346,6 @@ camera_builder scene::different_mats_camera_builder() {
 	float defocus_angle = 0.0f;
 	float focus_dist = 10.0f;
 	color background = color(0.0f, .0f, 0.f);
-	//color background = color(0.7f, .7f, 1.f);
 
 	return camera_builder().
 		setVfov(vfov).
@@ -369,7 +366,6 @@ camera_builder scene::prism_test_camera_builder() {
 	float defocus_angle = 0.0f;
 	float focus_dist = 10.0f;
 	color background = color(0.0f, 0.0f, 0.0f);
-	//color background = color(0.70, 0.80, 1.00);
 
 	return camera_builder().
 		setVfov(vfov).
@@ -418,21 +414,21 @@ bool scene::create_bvh(tri** d_world, size_t world_size, bvh** d_bvh) {
 
 __host__
 void scene::create_world(uint world_selector, tri** d_list, material** d_mat_list, int* world_size, int* n_materials, float* dev_sRGBToSpectrum_Data) {
-	create_world_kernel << <1, 1 >> > (world_selector, d_list, d_mat_list, world_size, n_materials, dev_sRGBToSpectrum_Data);
+	create_world_kernel <<<1, 1 >>> (world_selector, d_list, d_mat_list, world_size, n_materials, dev_sRGBToSpectrum_Data);
 }
 
 __host__
 void scene::free_world(tri** d_list, bvh** dev_bvh, material** d_mat_list, int world_size,
 	int n_materials) {
-	free_world_kernel << <1, 1 >> > (d_list, d_mat_list, world_size, n_materials, dev_bvh);
+	free_world_kernel <<<1, 1 >>> (d_list, d_mat_list, world_size, n_materials, dev_bvh);
 
 }
 
 const result scene_manager::init_world() {
 	/*
- * Allocate memory on GPU for hittables and materials, initialize their contents based on a world selector
- * then build a BVH
- */
+     * Allocate memory on GPU for hittables and materials, initialize their contents based on a world selector
+     * then build a BVH
+     */
 
 	int* dev_n_materials_ptr = nullptr;
 	int* dev_world_size_ptr = nullptr;
@@ -465,7 +461,6 @@ const result scene_manager::init_world() {
 	}
 
 	//copy constant to device global memory (cannot use constant memory since table is too big)
-
 
 	float* dev_ColorToSpectrum_Data;
 	checkCudaErrors(cudaMalloc((void**)&dev_ColorToSpectrum_Data, 3 * 64 * 64 * 64 * 3 * sizeof(float)));

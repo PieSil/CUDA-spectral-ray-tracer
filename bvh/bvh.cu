@@ -1,7 +1,3 @@
-//
-// Created by pietr on 12/12/2023.
-//
-
 #include "bvh.cuh"
 
 __device__
@@ -74,14 +70,6 @@ __device__
 bool bvh_node::hit(const ray &r, float min, float max, hit_record &rec) const {
 
     return is_leaf ? primitive->hit(r, min, max, rec) : bbox.hit(r, min, max);
-
-    /*if(!hit_volume->hit(r, ray_t, rec))
-        return false;
-
-    bool hit_left = left != nullptr && left->hit(r, ray_t, rec);
-    bool hit_right = right != nullptr && right->hit(r, interval(ray_t.min, hit_left ? rec.t : ray_t.max), rec);
-
-    return hit_left || hit_right;*/
 }
 
 
@@ -100,7 +88,6 @@ bool bvh::hit(const ray &r, float min, float max, hit_record &rec, const bvh_nod
 
     bool hit_anything = false;
     float closest_so_far = max;
-    //printf("computing hits\n");
 
     // Allocate traversal stack from thread-local memory,
     // and push NULL to indicate that there are no postponed nodes.
@@ -118,8 +105,6 @@ bool bvh::hit(const ray &r, float min, float max, hit_record &rec, const bvh_nod
             closest_so_far = rec.t;
         }
     } else do {
-            //bvh_node* child_l = node->get_left(block_mutex, node_cache, cur_cache_idx, cache_size);
-            //bvh_node* child_r = node->get_right(block_mutex, node_cache, cur_cache_idx, cache_size);
             bvh_node* child_l = node->get_left();
             bvh_node* child_r = node->get_right();
 
@@ -138,14 +123,6 @@ bool bvh::hit(const ray &r, float min, float max, hit_record &rec, const bvh_nod
                 closest_so_far = temp_rec.t;
                 rec = temp_rec;
             }
-
-
-            /*// Query overlaps a leaf node => report collision.
-            if (overlapL && bvh.isLeaf(childL))
-                list.add(queryObjectIdx, bvh.getObjectIdx(childL));
-
-            if (overlapR && bvh.isLeaf(childR))
-                list.add(queryObjectIdx, bvh.getObjectIdx(childR));*/
 
             // Query overlaps an internal node => traverse.
             bool traverse_l = child_l != nullptr && (hits_l && !child_l->is_leaf);
@@ -182,7 +159,6 @@ void bvh::to_shared(bvh_node* shared_mem, const size_t& shared_mem_size) const {
             shared_mem[queue_end] = *(current->left);
             //update pointer to child of current node
             current->left = &shared_mem[queue_end];
-            //printf("copied left node to shared memory at index %d\n", queue_end);
 
             queue_end++;
         }
@@ -193,7 +169,6 @@ void bvh::to_shared(bvh_node* shared_mem, const size_t& shared_mem_size) const {
             shared_mem[queue_end] = *(current->right);
             //update pointer to child of current node
             current->right = &shared_mem[queue_end];
-            //printf("copied left node to shared memory at index %d\n", queue_end);
             queue_end++;
         }
 
@@ -211,8 +186,6 @@ __device__ bool bvh::build_bvh(tri** src_objects, size_t list_size, curandState*
 
     int tos = -1;
     int n_nodes = 0;
-    //int stack_tos = -1;
-    //int nodes_tos = -1;
     root = new bvh_node(false);
     tos++;
     n_nodes++;
@@ -238,7 +211,6 @@ __device__ bool bvh::build_bvh(tri** src_objects, size_t list_size, curandState*
             } else {
                 int axis = cuda_random_int(0, 2, local_rand_state);
                 auto comparator = (axis == 0) ? box_x_compare: ((axis == 1) ? box_y_compare: box_z_compare);
-                //auto comparator = box_x_compare;
 
                 if (current_span == 2) {
                     //create left and right leaves

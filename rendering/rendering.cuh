@@ -67,10 +67,10 @@ public:
     void init_device_params(dim3 _threads, dim3 _blocks, uint _max_chunk_width, uint _max_chunk_height);
 
 	__device__
-		static void ray_bounce(uint t_in_block_idx, ray& r, uint bounce_limit, uint node_cache_size, curandState * const local_rand_state);
+    static void ray_bounce(uint t_in_block_idx, ray& r, uint bounce_limit, uint node_cache_size, curandState * const local_rand_state);
 
 	__device__
-		static ray get_ray(uint i, uint j, const point3 pixel00_loc, const vec3 pixel_delta_u, const vec3 pixel_delta_v,
+    static ray get_ray(uint i, uint j, const point3 pixel00_loc, const vec3 pixel_delta_u, const vec3 pixel_delta_v,
 			const point3 camera_center, const vec3 defocus_disk_u, const vec3 defocus_disk_v, const float defocus_angle,
 			curandState* local_rand_state);
 
@@ -109,27 +109,13 @@ private:
 	void assign_cam_data(camera* cam);
 
 	__device__
-		static ray get_ray_stratified_sample(uint i, uint j,
-			point3 pixel00_loc,
-			vec3 pixel_delta_u,
-			vec3 pixel_delta_v,
-			uint sample_x,
-			uint sample_y,
-			float recip_sqrt_spp,
-			point3 camera_center,
-			float defocus_angle,
-			vec3 defocus_disk_u,
-			vec3 defocus_disk_v,
-			curandState* local_rand_state);
+    static vec3 pixel_sample_square(vec3 pixel_delta_u, vec3 pixel_delta_v, curandState* local_rand_state);
 
 	__device__
-		static vec3 pixel_sample_square(vec3 pixel_delta_u, vec3 pixel_delta_v, curandState* local_rand_state);
+    static vec3 pixel_stratified_sample_square(uint sample_x, uint sample_y, float recip_sqrt_spp, vec3 pixel_delta_u, vec3 pixel_delta_v, curandState* local_rand_state);
 
 	__device__
-		static vec3 pixel_stratified_sample_square(uint sample_x, uint sample_y, float recip_sqrt_spp, vec3 pixel_delta_u, vec3 pixel_delta_v, curandState* local_rand_state);
-
-	__device__
-		static point3 defocus_disk_sample(vec3 camera_center, vec3 defocus_disk_u, vec3 defocus_disk_v, curandState* local_rand_state);
+    static point3 defocus_disk_sample(vec3 camera_center, vec3 defocus_disk_u, vec3 defocus_disk_v, curandState* local_rand_state);
 
     camera_data cam_data;
     bvh** dev_bvh;

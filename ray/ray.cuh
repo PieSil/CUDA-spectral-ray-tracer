@@ -10,13 +10,11 @@
 #include "cie_const.cuh"
 
 #define N_RAY_WAVELENGTHS 7
-#define RESOLUTION (LAMBDA_MAX-LAMBDA_MIN)/N_RAY_WAVELENGTHS;
 
 class ray {
 public:
 	vec3 orig;
 	vec3 dir;
-	//bool wavelengths_zeroed = false;
 	uint valid_wavelengths = N_RAY_WAVELENGTHS;
 	float wavelengths[N_RAY_WAVELENGTHS] = { 0.0f };
 	float power_distr[N_RAY_WAVELENGTHS] = { 0.0f };
@@ -31,7 +29,6 @@ public:
 	__device__ ray(const point3& origin, const vec3& direction) : orig(origin), dir(direction) {
 	}
 
-	// Class "getters"
 	__device__
 		vec3 origin() const {
 		return orig;
@@ -41,7 +38,6 @@ public:
 		return dir;
 	}
 
-	// Class methods
 	__device__
 		vec3 at(float t) const {
 		/* returns the coordinates of the point at distance t from the ray origin */

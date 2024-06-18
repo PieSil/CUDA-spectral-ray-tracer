@@ -91,7 +91,6 @@ public:
     material* mat;
     aabb bbox;
     vec3 normal;
-    //bool debug = false;
     float D;
 
 private:

@@ -6,14 +6,11 @@
 
 __host__ void camera::initialize() {
     /* Calculate the image height, and ensure that it's at least 1 */
-    //image_height = static_cast<int>(image_width / aspect_ratio);
-    //image_height = (image_height < 1) ? 1 : image_height;
     num_pixels = image_width * image_height;
 
     center = lookfrom;
 
     /* Determine viewport dimensions */
-    //auto focal_length = (lookfrom - lookat).length();
     auto theta = degrees_to_radians(vfov); //vertical angle covered by the camera view
     auto h = tan(theta/2.0f) * focus_dist; //h = half height of the image plane
     auto viewport_height = 2.0f * h;
@@ -41,9 +38,9 @@ __host__ void camera::initialize() {
 
     /*
     * Calculate the location of the upper left pixel
-    * NOTE: the camera coordinate system has the camera facing the negative z-axis,,
+    * NOTE: the camera coordinate system has the camera facing the negative z-axis,
     * the focal length is defined by the distance between the camera center and the viewport.
-    * Thus in order to compute viewport position on the z axis we need to subtract
+    * Thus, in order to compute viewport position on the z axis, we need to subtract
     * a vector parallel to the camera facing direction with a magnitude of focal_length.
     */
     auto viewport_upper_left = center - (focus_dist * w) - viewport_u/2 - viewport_v/2;

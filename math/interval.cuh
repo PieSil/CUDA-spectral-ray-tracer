@@ -1,7 +1,3 @@
-//
-// Created by pietr on 08/04/2024.
-//
-
 #ifndef SPECTRAL_RT_PROJECT_INTERVAL_CUH
 #define SPECTRAL_RT_PROJECT_INTERVAL_CUH
 

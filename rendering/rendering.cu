@@ -8,8 +8,8 @@ __device__
 void renderer::ray_bounce(const uint t_in_block_idx, ray& r, const uint bounce_limit, const uint node_cache_size, curandState* const local_rand_state) {
 	extern __shared__ char array[];
 
-	//access shared memeory portion representing hit_records array
 	uint block_size = blockDim.x * blockDim.y;
+    //access shared memeory portion representing hit_records array
 	hit_record* volatile hit_rec = (hit_record*)(&array[node_cache_size * sizeof(bvh_node) + t_in_block_idx * sizeof(hit_record)]);
 
 	for (int n_bounces = 0; n_bounces < bounce_limit; n_bounces++) {
@@ -77,37 +77,6 @@ ray renderer::get_ray(uint i, uint j, const point3 pixel00_loc, const vec3 pixel
 	return ray(ray_origin, ray_direction, local_rand_state);
 };
 
-__device__
-ray renderer::get_ray_stratified_sample(uint i, uint j,
-	const point3 pixel00_loc,
-	const vec3 pixel_delta_u,
-	const vec3 pixel_delta_v,
-	const uint sample_x,
-	const uint sample_y,
-	const float recip_sqrt_spp,
-	const point3 camera_center,
-	const float defocus_angle,
-	const vec3 defocus_disk_u,
-	const vec3 defocus_disk_v,
-	curandState* local_rand_state) {
-	/*
-	 * Get a randomly sampled camera ray for the pixel at location i,j
-	 * originating from  a random point on the camera defocus disk
-	 * NOTE: ray direction is not a unit vector in order to have a simpler and slightly faster code
-	 */
-
-	auto pixel_center = pixel00_loc + ((float)i * pixel_delta_u) + ((float)j * pixel_delta_v);
-	auto pixel_sample = pixel_center + pixel_stratified_sample_square(sample_x, sample_y, recip_sqrt_spp, pixel_delta_u, pixel_delta_v, local_rand_state);
-
-	auto ray_origin = (defocus_angle <= 0.0f) ? camera_center : defocus_disk_sample(camera_center,
-		defocus_disk_u,
-		defocus_disk_v,
-		local_rand_state);
-	auto ray_direction = pixel_sample - ray_origin;
-
-	return ray(ray_origin, ray_direction, local_rand_state);
-};
-
 __global__
 void init_random_states(int max_x, int max_y, curandState* rand_state) {
 
@@ -138,8 +107,6 @@ spectral_render_kernel(float* fb_r, float* fb_g, float* fb_b, bvh** bvh, uint wi
 
 	uint i = threadIdx.x + blockIdx.x * blockDim.x; //col idx
 	uint j = threadIdx.y + blockIdx.y * blockDim.y; //row idx
-
-	uint pixel_index = j * width + i;
 
 	uint block_size = blockDim.x * blockDim.y;
 	uint block_idx = blockIdx.y * gridDim.x + blockIdx.x;
@@ -293,13 +260,6 @@ void renderer::init_device_params(const dim3 _threads, const dim3 _blocks, const
 	lc->add_entry("blocks y", blocks.y);
 	lc->add_entry("blocks z", blocks.z);
 
-	cudaFuncAttributes attr;
-	cudaFuncGetAttributes(&attr, spectral_render_kernel);
-	/*
-	cout << "Max threads per block: " << attr.maxThreadsPerBlock << endl;
-	cout << "Registers per thread: " << attr.numRegs << endl;
-	*/
-
 	device_inited = true;
 }
 
@@ -308,8 +268,6 @@ void renderer::init_shared_mem_size() {
 	cudaDeviceProp device_props;
 	cudaGetDeviceProperties(&device_props, 0);
 	uint max_shared_mem_size = device_props.sharedMemPerBlock;
-
-	// cout << "Max shared memory per block: " << max_shared_mem_size << endl;
 	
 	node_cache_size = BVH_NODE_CACHE_SIZE;
 	uint shared_bg_byte_size = N_CIE_SAMPLES * sizeof(float);
@@ -324,13 +282,6 @@ void renderer::init_shared_mem_size() {
 		node_cache_byte_size = node_cache_size * sizeof(bvh_node);
 		shared_mem_size = shared_bg_byte_size + node_cache_byte_size + shared_hit_rec_byte_size;
 	}
-
-	/*
-	cout << "shared_bg_byte_size is " << shared_bg_byte_size << endl;
-	cout << "node_cache_byte_size is " << node_cache_byte_size << endl;
-	cout << "shared_hit_rec_byte_size is " << shared_hit_rec_byte_size << endl;
-	*/
-
 
 }
 

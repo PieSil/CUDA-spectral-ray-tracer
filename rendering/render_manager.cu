@@ -70,8 +70,6 @@ void render_manager::init_device_params(dim3 threads, dim3 blocks, uint _chunk_w
 		chunk_width = _chunk_width;
 		chunk_height = _chunk_height;
 
-		uint chunk_size = chunk_width * chunk_height;
-
 		x_chunks = ceil(float(cam->getImageWidth()) / float(chunk_width));
 		uint y_chunks = ceil(float(cam->getImageHeight()) / float(chunk_height));
 		n_iterations = x_chunks * y_chunks;
@@ -79,8 +77,8 @@ void render_manager::init_device_params(dim3 threads, dim3 blocks, uint _chunk_w
 		r.init_device_params(threads, blocks, chunk_width, chunk_height);
 		device_inited = true;
 
-		render_data_container[0].alloc_buffer(/*chunk_size*/threads.x * blocks.x * threads.y * blocks.y);
-		render_data_container[1].alloc_buffer(/*chunk_size*/threads.x * blocks.x * threads.y * blocks.y);
+		render_data_container[0].alloc_buffer(threads.x * blocks.x * threads.y * blocks.y);
+		render_data_container[1].alloc_buffer(threads.x * blocks.x * threads.y * blocks.y);
 
 		auto lc = log_context::getInstance();
 	}

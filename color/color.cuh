@@ -1,7 +1,3 @@
-//
-// Created by pietr on 31/03/2024.
-//
-
 #ifndef COLOR_CONVERSION_COLOR_H
 #define COLOR_CONVERSION_COLOR_H
 

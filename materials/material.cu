@@ -1,10 +1,5 @@
-//
-// Created by pietr on 19/03/2024.
-//
-
 #include "material.cuh"
 
-//lambertian
 __device__
 const bool
 lambertian_scatter(const hit_record& rec, vec3& scatter_direction, curandState* local_rand_state) {
@@ -14,11 +9,9 @@ lambertian_scatter(const hit_record& rec, vec3& scatter_direction, curandState* 
     if (scatter_direction.near_zero())
         scatter_direction = rec.normal;
 
-    //attenuation = (attenuation * weight);
     return true;
 }
 
-//reflection
 __device__
 const bool reflection_scatter(float mat_fuzz, vec3 unit_in_direction, const hit_record& rec, vec3& scattered_direction,
     curandState* local_rand_state) {
@@ -43,7 +36,7 @@ const float reflectance(float cosine, float ref_idx) {
     // is perpendicular to the surface (i.e. cosine = 0)
 
     r0 = r0 * r0; //part of Schlick's approximation, adjusts r0 in order to account
-    // for the behaviour of light at oblique angles
+                  // for the behaviour of light at oblique angles
 
     return r0 + (1.0f - r0) * pow(1.0f - cosine, 5.0f); //r0: reflectance at normal incidence
     // (1 - r0): reduction in reflectance as the angle of
@@ -68,7 +61,7 @@ const bool material::scatter(ray& r_in, const hit_record& rec, curandState* loca
 
             if (!did_scatter)
                 r_in.valid_wavelengths = 0;
-        break;
+            break;
         
         case DIELECTRIC:
             float ir = sellmeier_index(sellmeier_B, sellmeier_C, r_in.wavelengths[0]);
@@ -129,8 +122,6 @@ const bool material::scatter(ray& r_in, const hit_record& rec, curandState* loca
 
             epsilon_correction_sign = -1.0f;
         }
-
-
 
         return !cannot_refract;
     }

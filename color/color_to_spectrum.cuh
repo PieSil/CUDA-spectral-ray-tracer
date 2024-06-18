@@ -27,7 +27,7 @@
  * More details on the meaning of these constants and the reasoning behind the algorithms can be found here:
  * https://www.pbr-book.org/4ed/Radiometry,_Spectra,_and_Color/Color#fragment-RGBToSpectrumTablePublicConstants-1
  *
- * I very much thank the authors of pbrt, I couldn't have done this without them.
+ * Many thanks to the authors of pbrt.
  *
  * Matt Pharr, Wenzel Jakob, and Greg Humphreys. 2016.
  * Physically Based Rendering: From Theory to Implementation (3rd ed.). Morgan Kaufmann Publishers Inc., San Francisco, CA, USA.

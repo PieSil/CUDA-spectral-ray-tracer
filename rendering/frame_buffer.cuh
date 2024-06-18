@@ -34,7 +34,6 @@ public:
 	float* r;
 	float* g;
 	float* b;
-	//vec3* data;
 };
 
 struct image_channels {

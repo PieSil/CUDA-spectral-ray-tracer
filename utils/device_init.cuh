@@ -33,7 +33,7 @@ inline void init_device_symbols() {
     checkCudaErrors(cudaMemcpyToSymbol(dev_sRGBToSpectrumTable_Scale, sRGBToSpectrumTable_Scale, 64*sizeof(float)));
     checkCudaErrors(cudaMemcpyToSymbol(&dev_sRGBToSpectrumTable_Res, &sRGBToSpectrumTable_Res, sizeof(int)));
 
-    /* predefined sellmeier's equation coefficients */
+    /* predefined Sellmeier's equation coefficients */
     checkCudaErrors(cudaMemcpyToSymbol(dev_BK7_b, BK7_b, 3 * sizeof(float)));
     checkCudaErrors(cudaMemcpyToSymbol(dev_BK7_c, BK7_c, 3 * sizeof(float)));
 

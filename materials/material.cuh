@@ -21,18 +21,6 @@
 //#define NORMAL_TEST 5
 #define NO_MAT 6
 
-/*
-enum MAT_TYPE {
-    LAMBERTIAN,
-    METALLIC,
-    DIELECTRIC,
-    DIELECTRIC_CONST,
-    EMISSIVE,
-    NORMAL_TEST,
-    NO_MAT
-};
-*/
-
 class material {
 public:
     __host__ __device__
@@ -116,27 +104,12 @@ public:
         return material(color(1.0f, 1.0, 1.0f), 1.0f, b, c, 0.0f, DIELECTRIC);
     }
 
-    /*
-    __device__
-    static material dielectric_const(const float ir) {
-        return material(color(1.0f, 1.0, 1.0f), 1.0f, ir, 0.0f, DIELECTRIC_CONST);
-    }
-    */
-
-    /*
-    __device__
-    static material normal_test(color col) {
-        return material(col, 1.0f, 1.0f, 0.0f, NORMAL_TEST);
-    }
-    */
-
     __device__
     const bool scatter(ray &r_in, const hit_record &rec, curandState *local_rand_state) const;
 
     __device__
     bool unified_scatter(ray& r_in, const hit_record& rec, curandState* local_rand_state) const;
 
-    //TODO: maybe find a way to move data into shared memory?
     color col;
     float reflection_fuzz;
     uint material_type;

@@ -21,8 +21,6 @@ public:
     __host__
     camera() {};
 
-    //getters
-
     __host__
     const int& getImageWidth() const {
         return image_width;
@@ -94,9 +92,6 @@ private:
     vec3 pixel_delta_u; //Offset to pixel to the right
     vec3 pixel_delta_v; //Offset to pixel below
     vec3   u, v, w; //camera frame basis vectors
-    //u: camera "right" direction
-    //v: camera "up" direction
-    //w: opposite of camera "front" direction (-w = camera "front" direction)
 
     vec3   defocus_disk_u;  // Defocus disk horizontal radius
     vec3   defocus_disk_v;  // Defocus disk vertical radius

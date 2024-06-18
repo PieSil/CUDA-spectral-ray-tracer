@@ -179,44 +179,46 @@ private:
 		}
 	}
 
+    //validity flags
+    bool scene_inited = false;
+    bool device_inited = false;
+
+    //scene
 	bvh** dev_bvh;
 	camera* cam;
 	uint image_width;
 	uint image_height;
-	bool scene_inited = false;
 
+    //render
 	renderer r;
 	bool renderer_inited = false;
 	float* fb_r;
 	float* fb_g;
 	float* fb_b;
-	render_step_data render_data_container[2];
-	size_t next_write_render_data_index = 0;
-	size_t next_read_render_data_index = 0;
 
+    //multithreading
+    thread render_worker;
 	bool worker_started = false;
+    render_step_data render_data_container[2];
+    size_t next_write_render_data_index = 0;
+    size_t next_read_render_data_index = 0;
 	bool done = true;
 	binary_semaphore is_done_sem{ 1 };
-	//vec3* tmp_fb;
 
-	bool device_inited = false;
-
+    //image chunks management
 	uint i = 0;
 	uint chunk_width;
 	uint chunk_height;
 	uint n_iterations;
-	//uint chunk_size;
 	uint x_chunks;
-	//uint y_chunks;
-
 	uint offset_x = 0;
 	uint offset_y = 0;
 	uint last_offset_x = 0;
 	uint last_offset_y = 0;
 	uint last_chunk_width = 0;
 	uint last_chunk_height = 0;
-	thread render_worker;
 
+    //device parameters
 	dim3 threads;
 	dim3 blocks;
 };

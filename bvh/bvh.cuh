@@ -134,11 +134,6 @@ public:
         }
     }
 
-//    __device__
-//    explicit bvh(const hittable** objects, const size_t n_objects, curandState* local_rand_state) : bvh(objects, n_objects, local_rand_state) {
-//        //root = new bvh_node(list, local_rand_state);
-//    }
-
     __host__ __device__
     ~bvh() {
         if (root != nullptr)
@@ -209,7 +204,6 @@ public:
     };
 
 private:
-    //bvh_node** nodes;
     uint size;
     bvh_node* root;
     aabb global_bbox;

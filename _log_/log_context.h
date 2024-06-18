@@ -27,7 +27,7 @@ enum FilenameOption {
 	TITLE
 };
 
-//A class to store log data on the application performance and eventually save it to file
+//A class to store log data about the application's performance and eventually save it to file
 class log_context {
 public:
 	static std::shared_ptr<log_context> getInstance() {
@@ -104,7 +104,7 @@ private:
 		setPath("logs/log.txt");
 	}
 
-	string title; //a human readable id which will always be prepended to the string set as filename of the path
+	string title; //a human-readable id which will always be prepended to the string set as filename of the path
 	static std::shared_ptr<log_context> instance;
 	fs::path rel_path;
 	vector<string> data_insertion_order;

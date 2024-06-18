@@ -11,10 +11,4 @@ void save_img(uchar_img& image, const char* filename) {
 	fs::create_directories(p.parent_path());
 	image.save(p.string().c_str());
 	std::clog << "Image saved as: " << p.filename() << std::endl;
-
-	/*
-	while (!main_disp.is_closed()) {
-		main_disp.wait();
-	}
-	*/
 }

@@ -1,7 +1,3 @@
-//
-// Created by pietr on 20/03/2024.
-//
-
 #ifndef SPECTRAL_RAY_TRACING_VEC3_H
 #define SPECTRAL_RAY_TRACING_VEC3_H
 

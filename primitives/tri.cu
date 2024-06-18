@@ -3,7 +3,7 @@
 __device__
 bool tri::hit(const ray& r, float min, float max, hit_record& rec) const {
     /*
-    * Determine whether the ray hits the plane where lies the triangle or not
+    * Determine whether the ray hits the plane where the triangle lies or not
     * for the full math and explanation please refer to chapters 6.2 and 6.3 of:
     * Ray Tracing: The Next Week by  Peter Shirley, Trevor David Black, Steve Hollasch
     * (https://raytracing.github.io/books/RayTracingTheNextWeek.html):
@@ -35,12 +35,6 @@ bool tri::hit(const ray& r, float min, float max, hit_record& rec) const {
     rec.mat = mat;
     rec.set_face_normal(r, normal);
 
-    /*
-    if (debug) {
-        printf("hit!:\nrec.t: %f\nintersection: (%f, %f, %f)\nrec.normal: ()%f, %f, %f)\n\n", rec.t, rec.p[0], rec.p[1], rec.p[2], rec.normal[0], rec.normal[1], rec.normal[2]);
-    }
-    */
-
     return true;
 }
 
@@ -55,7 +49,6 @@ void tri::init() {
 
     vec3 n = cross(v[1] - v[0], v[2] - v[0]);
     normal = unit_vector(n);
-    //printf("normal: (%f, %f, %f)\n", normal[0], normal[1], normal[2]);
 
     bool perp_x = fabs(dot(normal, vec3(1.f, 0.f, 0.f))) < 1e-8f;
     bool perp_y = fabs(dot(normal, vec3(0.f, 1.f, 0.f))) < 1e-8f;
@@ -130,7 +123,7 @@ const bool tri::is_interior_faster(const point3 p) const {
 __device__
 const bool tri::is_interior(const point3 p) const {
     /*
-     * check wether the intersection point P of the ray with the tri's plane
+     * check whether the intersection point P of the ray with the tri's plane
      * lies on the "left" side of each tri's edge
      * don't bother with early return because of divergence
      */
@@ -155,7 +148,7 @@ float tri::double_signed_area_2D(const point3 v1, const point3 v2, const point3 
     /*
      * project a given triangle onto a 2D plane, then compute its double area
      * useful in order to check if vertices are given in a clockwise or counter-clockwise order
-     * and also to determine whether a point p on the triangle's plane is inside or outside of the triangle
+     * and also to determine whether a point p on the triangle's plane is inside or outside the triangle
      */
 
     uint w_axis; //"width" axis

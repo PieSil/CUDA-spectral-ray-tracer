@@ -20,18 +20,12 @@ __device__
 float cuda_random_float(curandState* local_rand_state) {
     // Returns a random real in (0,1].
     float random = curand_uniform(local_rand_state);
-    //printf("random value: %f, local random state: %p", random, local_rand_state);
     return random;
 }
 
 __device__
 float cuda_random_float(float min, float max, curandState* local_rand_state) {
     // Returns a random real in (min,max].
-
-    /*
-    float range_multiplier = max - min + 0.999999f;
-    float result = range_multiplier*cuda_random_float(local_rand_state) + min;
-    */
 
     float range_width = max - min;
     float random = cuda_random_float(local_rand_state); // Generates random float between 0 and 1
@@ -64,6 +58,7 @@ void random_permutation(int *indices, int size, curandState *local_rand_state) {
 
     for (int i = size - 1; i > 0; --i) {
         int j = cuda_random_int(0, i, local_rand_state);
+
         // Swap indices[i] with indices[j]
         int temp = indices[i];
         indices[i] = indices[j];

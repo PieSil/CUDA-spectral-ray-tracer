@@ -6,10 +6,7 @@
 #include "render_manager.cuh"
 #include "log_context.h"
 #include "params.h"
-#include <cuda_profiler_api.h> 
-
-#define SAMPLES_PER_PIXEL 100
-#define BOUNCE_LIMIT 10
+#include <cuda_profiler_api.h>
 
 using namespace scene;
 
@@ -40,8 +37,7 @@ bool render_cycle(render_manager& rm, frame_buffer& fb, uchar_img& dst_image, im
 				}
 			} while (has_data);
 
-		}
-		else {
+		} else {
 			bool has_data = true;
 			do {
 				has_data = rm.step();
@@ -72,10 +68,14 @@ bool render_cycle(render_manager& rm, frame_buffer& fb, uchar_img& dst_image, im
 }
 
 void render(bool multithread = true) {
+    //create scene
 	scene_manager sm = scene_manager();
 	result res = sm.getResult();
+
 	if (res.success) {
 		clog << res.msg << endl;
+
+        //alloc frame buffer and prepare renderer
 		uint width = sm.img_width();
 		uint height = sm.img_height();
 		frame_buffer fb(width * height);
@@ -89,23 +89,7 @@ void render(bool multithread = true) {
 		rm.init_renderer(pm->getParams().getBounceLimit(), pm->getParams().getNSamples());
 		rm.init_device_params(pm->getParams().getXcsize(), pm->getParams().getYcsize());
 
-		/*
-		while (!rm.isDone()) {
-			rm.step();
-			rm.update_fb();
-			ch = fb;
-			image = get_image(ch.r, ch.g, ch.b, width, height);
-			disp.render(image);
-			disp.paint();
-		}
-		*/
-
-		/*
-		ch = fb;
-		image = get_image(ch.r, ch.g, ch.b, width, height);
-		disp.render(image);
-		disp.paint();
-		*/
+        //do render, if successfull decide whether to save image and/or log
 		if (render_cycle(rm, fb, image, disp, ch, multithread)) {
 			if (param_manager::getInstance()->getParams().logActive())
 				log_context::getInstance()->to_file();
@@ -125,7 +109,6 @@ void render(bool multithread = true) {
 
 		}
 
-		//write_to_ppm(fb.data, width, height);
 	}
 	else {
 		cerr << res.msg << endl;
@@ -145,6 +128,7 @@ int main(int argc, char* argv[]) {
 		cout << "Log Subdir: " << log_subdir << endl;
 	}
 
+    //parse CLI args and print some of them
 	const uint scene_id = pm->getParams().getSceneId();
 	cout << "Scene: " << sceneIdToStr[scene_id] << " (ID: " << scene_id << ")" << endl;
 	cout << "X res: " << pm->getParams().getXres() << endl;
@@ -157,6 +141,7 @@ int main(int argc, char* argv[]) {
 	const bool do_log = pm->getParams().logActive();
 	cout << "Logging " << (do_log ? "enabled" : "disabled") << endl;
 
+    //prepare log context
 	lc->append_dir(pm->getParams().getLogSubdir());
 	lc->add_title(pm->getParams().getImgTitle());
 	lc->add_filename_option(FilenameOption::TIMESTAMP);

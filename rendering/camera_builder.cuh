@@ -8,8 +8,6 @@
 #include "camera.cuh"
 #include "params.h"
 
-//Builder
-
 class camera_builder {
 public:
 

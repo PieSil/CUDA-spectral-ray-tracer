@@ -1,7 +1,3 @@
-//
-// Created by pietr on 31/03/2024.
-//
-
 #include "color.cuh"
 
 __host__ __device__
@@ -97,8 +93,6 @@ color dev_spectrum_to_XYZ(const float * const spectrum, const float * const powe
         y += spectrum_interp(dev_cie_y, lambda) * power * delta_lambda;
         z += spectrum_interp(dev_cie_z, lambda) * power * delta_lambda;
     }
-
-    // color xyz = color(x, y, z);
 
     return color(x, y, z);
 }

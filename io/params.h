@@ -251,12 +251,6 @@ public:
 		 * --do-log: enables logging at the end of render
 		 * --no-show: disables display of render
 		 * --save: saves final result as image
-		 * 
-		 * -- POSSIBLE FUTURE SUPPORTED ARGUMENTS--
-		 * -nstr/--nstreams: number of different streams to use for rendering, default: 1
-		 * -sm/--sort-materials: whether to sort materials based on id after each bounce simulation, default: true
-		 * -um/--unified-mem: whether to use unified memory to manage frame buffer accessed by the device
-		 * other parameters to manage logging
 		 */
 
 		for (int i = 1; i < argc; i++) {

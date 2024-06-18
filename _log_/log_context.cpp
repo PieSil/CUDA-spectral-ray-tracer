@@ -91,8 +91,6 @@ void log_context::add_title(const string _title) {
 	add_filename_option(FilenameOption::TITLE);
 }
 
-//std::numeric_limits<float>::digits10 + 1
-
 void log_context::add_entry(const string name, const float value) {
 	//ensure max precision when converting to string
 	std::ostringstream oss;
